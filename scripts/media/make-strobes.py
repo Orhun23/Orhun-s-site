@@ -7,7 +7,8 @@ Final mask = human ∪ (general ∩ (human grown slightly ∪ a band under the f
 The human pass guarantees head and arms; the general pass adds the board without the statues.
 
 Usage: python make-strobes.py <frames-dir> <name> <frame,frame,...> [--height 220]
-Writes public/media/hero/<name>.webp (sprite) and src/data/strobes/<name>.json (frame rects).
+Writes public/media/hero/<name>.webp (sprite), <name>-outline.webp (the same frames as
+drawn outlines, so the browser doesn't have to compute them) and src/data/strobes/<name>.json.
 Needs: pillow, rembg[cpu], opencv-python-headless (rembg downloads two ~170 MB models on first run).
 """
 import json
@@ -86,7 +87,16 @@ def main():
     os.makedirs(os.path.dirname(out_img), exist_ok=True)
     os.makedirs(os.path.dirname(out_json), exist_ok=True)
     sheet.save(out_img, 'WEBP', quality=82, alpha_quality=90, method=6)
-    json.dump({'src': f'/media/hero/{name}.webp', 'height': height, 'frames': frames}, open(out_json, 'w'), indent=1)
+    # outline = alpha minus an eroded alpha, about 2 px wide at sprite size
+    import numpy as np
+    import cv2
+    a = np.array(sheet.getchannel('A'))
+    ring = cv2.subtract(a, cv2.erode(a, np.ones((5, 5), np.uint8)))
+    outline = Image.new('RGBA', sheet.size, (0, 0, 0, 0))
+    outline.putalpha(Image.fromarray(ring))
+    outline.save(out_img.replace('.webp', '-outline.webp'), 'WEBP', lossless=True)
+    json.dump({'src': f'/media/hero/{name}.webp', 'outline': f'/media/hero/{name}-outline.webp', 'height': height, 'frames': frames},
+              open(out_json, 'w'), indent=1)
     print(out_img, os.path.getsize(out_img) // 1024, 'KB', sheet.size)
 
 

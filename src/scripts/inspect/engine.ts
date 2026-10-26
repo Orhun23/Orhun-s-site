@@ -188,6 +188,15 @@ export function createExploded(o: ExplodedOptions): Exploded {
     overlay.appendChild(svg);
   }
 
+  // segments as flat [ax, ay, az, bx, by, bz, …]: no per-vertex allocation while drawing
+  const flat = (segs: Seg[]) => {
+    const f = new Float32Array(segs.length * 6);
+    segs.forEach(([a, b], i) => f.set([a[0], a[1], a[2], b[0], b[1], b[2]], i * 6));
+    return f;
+  };
+  const groundF = flat(model.ground ?? []);
+  const dimsF = flat(model.dims ?? []);
+
   const parts = model.parts.map((def) => {
     const home = centroid(def.segs.length ? def.segs : (def.accent ?? []));
     const rel = (s: Seg[]) =>
@@ -207,7 +216,19 @@ export function createExploded(o: ExplodedOptions): Exploded {
       if (!def.mobile) leader.dataset.desktopOnly = '';
       svg.appendChild(leader);
     }
-    return { def, home, local: rel(def.segs), localAccent: rel(def.accent ?? []), label, leader, t: 0, at: home, lw: 0 };
+    return {
+      def,
+      home,
+      local: flat(rel(def.segs)),
+      localAccent: flat(rel(def.accent ?? [])),
+      label,
+      leader,
+      t: 0,
+      at: home,
+      lw: 0,
+      lastOp: -1,
+      lastKey: '',
+    };
   });
   const dimLabels = (model.dimLabels ?? []).map((d) => {
     const el = document.createElement('div');
@@ -240,25 +261,51 @@ export function createExploded(o: ExplodedOptions): Exploded {
     width = Math.max(1, r.width);
     height = Math.max(1, r.height);
     small = width < 520;
-    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    // 1.5× is crisp enough for 1px lines and ~45% fewer pixels to push per frame than 2×
+    dpr = Math.min(window.devicePixelRatio || 1, 1.5);
     canvas.width = Math.round(width * dpr);
     canvas.height = Math.round(height * dpr);
     svg?.setAttribute('viewBox', `0 0 ${width} ${height}`);
-    parts.forEach((q) => (q.lw = 0));
+    parts.forEach((q) => {
+      q.lw = 0;
+      q.lastKey = '';
+    });
   }
 
-  function stroke(segs: Seg[], n: number, xf: (v: V3) => V3, color: string, alpha: number, lw = 1.15) {
+  // One affine map per part: screen = centre + scale·(M·v + t), only the x/y rows are needed.
+  // M = view rotation · part rotation, t = view rotation · (part position − model centre).
+  const M = new Float64Array(6);
+  const T = new Float64Array(2);
+  function compose(rm: M3 | null, pos: V3) {
+    const r = R;
+    if (rm) {
+      for (let row = 0; row < 2; row++)
+        for (let c = 0; c < 3; c++) M[row * 3 + c] = r[row * 3] * rm[c] + r[row * 3 + 1] * rm[3 + c] + r[row * 3 + 2] * rm[6 + c];
+    } else {
+      M[0] = r[0]; M[1] = r[1]; M[2] = r[2]; M[3] = r[3]; M[4] = r[4]; M[5] = r[5];
+    }
+    const px = pos[0] - model.centre[0],
+      py = pos[1] - model.centre[1],
+      pz = pos[2] - model.centre[2];
+    T[0] = r[0] * px + r[1] * py + r[2] * pz;
+    T[1] = r[3] * px + r[4] * py + r[5] * pz;
+  }
+
+  function stroke(f: Float32Array, n: number, color: string, alpha: number, lw = 1.15) {
     if (n <= 0 || alpha <= 0) return;
     ctx.globalAlpha = alpha;
     ctx.strokeStyle = color;
     ctx.lineWidth = lw;
     ctx.beginPath();
-    for (let i = 0; i < n; i++) {
-      const [a, b] = segs[i];
-      const [ax, ay] = project(xf(a));
-      const [bx, by] = project(xf(b));
-      ctx.moveTo(ax, ay);
-      ctx.lineTo(bx, by);
+    const cx = width / 2,
+      cy = height / 2,
+      s = scale;
+    const [m0, m1, m2, m3, m4, m5] = M;
+    const t0 = T[0],
+      t1 = T[1];
+    for (let i = 0, o = 0; i < n; i++, o += 6) {
+      ctx.moveTo(cx + s * (m0 * f[o] + m1 * f[o + 1] + m2 * f[o + 2] + t0), cy - s * (m3 * f[o] + m4 * f[o + 1] + m5 * f[o + 2] + t1));
+      ctx.lineTo(cx + s * (m0 * f[o + 3] + m1 * f[o + 4] + m2 * f[o + 5] + t0), cy - s * (m3 * f[o + 3] + m4 * f[o + 4] + m5 * f[o + 5] + t1));
     }
     ctx.stroke();
   }
@@ -276,9 +323,9 @@ export function createExploded(o: ExplodedOptions): Exploded {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, width, height);
     ctx.lineCap = 'round';
-    const id = (v: V3) => v;
-    if (model.ground) stroke(model.ground, model.ground.length, id, ink, 0.3);
-    if (model.dims) stroke(model.dims, Math.floor(model.dims.length * d), id, accent, 0.95);
+    compose(null, model.centre);
+    stroke(groundF, groundF.length / 6, ink, 0.3);
+    stroke(dimsF, Math.floor((dimsF.length / 6) * d), accent, 0.95);
 
     let moving: Part | null = null;
     for (const q of parts) {
@@ -286,19 +333,15 @@ export function createExploded(o: ExplodedOptions): Exploded {
       q.t = local;
       const k = 1 - local;
       const pos: V3 = [q.home[0] + q.def.explode[0] * k, q.home[1] + q.def.explode[1] * k, q.home[2] + q.def.explode[2] * k];
-      const rm = q.def.rot ? euler(q.def.rot[0] * k, q.def.rot[1] * k, q.def.rot[2] * k) : null;
-      const xf = (v: V3): V3 => {
-        const r = rm ? mul(rm, v) : v;
-        return [r[0] + pos[0], r[1] + pos[1], r[2] + pos[2]];
-      };
+      compose(q.def.rot && k > 0 ? euler(q.def.rot[0] * k, q.def.rot[1] * k, q.def.rot[2] * k) : null, pos);
       q.at = pos;
       const inFlight = local > 0.001 && local < 0.999;
       if (inFlight) moving = q.def;
       // the part being fitted is highlighted; parts still waiting are drawn lighter
       const color = inFlight ? accent : ink;
       const alpha = local <= 0.001 && a > 0.001 ? 0.55 : 1;
-      stroke(q.local, q.local.length, xf, color, alpha, inFlight ? 1.5 : 1.15);
-      stroke(q.localAccent, q.localAccent.length, xf, accent, alpha);
+      stroke(q.local, q.local.length / 6, color, alpha, inFlight ? 1.5 : 1.15);
+      stroke(q.localAccent, q.localAccent.length / 6, accent, alpha);
     }
     ctx.globalAlpha = 1;
     placeLabels(d);
@@ -313,14 +356,20 @@ export function createExploded(o: ExplodedOptions): Exploded {
     if (!overlay) return;
     for (const q of parts) {
       if (!q.label || !q.leader) continue;
+      if (small && !q.def.mobile) continue; // hidden by CSS on phones: don't write to it
+      // labels belong to the exploded diagram: each one fades as its part arrives
+      const op = clamp01((1 - q.t) * 2.2);
+      if (op === 0 && q.lastOp === 0) continue; // hidden and staying hidden: no DOM writes
       const [x, y] = project(q.at);
       const side = q.def.labelSide ?? (x > width / 2 ? 1 : -1);
       const off = small ? 40 : 76;
       const lw = (q.lw ||= q.label.offsetWidth);
       const lx = side > 0 ? Math.min(x + off, width - lw - 6) : Math.max(x - off, lw + 6);
       const ly = Math.max(14, Math.min(height - 14, y - (small ? 14 : 26)));
-      // labels belong to the exploded diagram: each one fades as its part arrives
-      const op = clamp01((1 - q.t) * 2.2);
+      const key = `${lx.toFixed(1)},${ly.toFixed(1)},${x.toFixed(1)},${y.toFixed(1)},${op.toFixed(2)}`;
+      if (key === q.lastKey) continue;
+      q.lastKey = key;
+      q.lastOp = op;
       q.label.style.transform = `translate(${lx.toFixed(1)}px, ${ly.toFixed(1)}px) translate(${side > 0 ? '0' : '-100%'}, -50%)`;
       q.label.style.opacity = op.toFixed(3);
       q.leader.setAttribute('x1', x.toFixed(1));
@@ -357,7 +406,8 @@ export function createExploded(o: ExplodedOptions): Exploded {
 
   return {
     setProgress(v) {
-      const next = reduced ? 1 : clamp01(v);
+      // quantised: sub-pixel progress changes aren't worth a redraw
+      const next = reduced ? 1 : Math.round(clamp01(v) * 600) / 600;
       if (next === progress) return;
       progress = next;
       kick();

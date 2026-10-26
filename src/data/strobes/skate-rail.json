@@ -1,5 +1,6 @@
 {
  "src": "/media/hero/skate-rail.webp",
+ "outline": "/media/hero/skate-rail-outline.webp",
  "height": 220,
  "frames": [
   {

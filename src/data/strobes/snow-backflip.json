@@ -1,5 +1,6 @@
 {
  "src": "/media/hero/snow-backflip.webp",
+ "outline": "/media/hero/snow-backflip-outline.webp",
  "height": 220,
  "frames": [
   {

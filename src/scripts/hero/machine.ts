@@ -489,6 +489,7 @@ export type Machine = {
 
 type Sheet = {
   img: HTMLImageElement | null;
+  outlineImg: HTMLImageElement | null; // pre-made by scripts/media/make-strobes.py
   tinted: HTMLCanvasElement | null; // solid ink silhouettes
   outline: HTMLCanvasElement | null; // the same, as drawn outlines
   data: typeof snowStrobe;
@@ -537,61 +538,49 @@ export function createMachine(opts: MachineOptions): Machine {
 
   /* strobes */
   const sheets: Record<'snow' | 'skate', Sheet> = {
-    snow: { img: null, tinted: null, outline: null, data: snowStrobe },
-    skate: { img: null, tinted: null, outline: null, data: skateStrobe as typeof snowStrobe },
+    snow: { img: null, outlineImg: null, tinted: null, outline: null, data: snowStrobe },
+    skate: { img: null, outlineImg: null, tinted: null, outline: null, data: skateStrobe as typeof snowStrobe },
   };
-  const loadSheet = (key: 'snow' | 'skate') => {
-    const img = new Image();
-    img.decoding = 'async';
-    img.src = sheets[key].data.src;
-    img.onload = () => {
-      sheets[key].img = img;
+  const idle = (fn: () => void) =>
+    'requestIdleCallback' in window ? requestIdleCallback(fn, { timeout: 400 }) : setTimeout(fn, 50);
+  const loadImg = (src: string) =>
+    new Promise<HTMLImageElement>((res, rej) => {
+      const img = new Image();
+      img.decoding = 'async';
+      img.onload = () => res(img);
+      img.onerror = rej;
+      img.src = src;
+    });
+  const loadSheet = async (key: 'snow' | 'skate') => {
+    const sh = sheets[key];
+    const [img, outlineImg] = await Promise.all([loadImg(sh.data.src), loadImg(sh.data.outline)]);
+    await Promise.all([img.decode?.(), outlineImg.decode?.()]).catch(() => {});
+    sh.img = img;
+    sh.outlineImg = outlineImg;
+    idle(() => {
       tint(key);
       kick();
-    };
+    });
   };
-  const tint = (key: 'snow' | 'skate') => {
-    const sh = sheets[key];
-    if (!sh.img) return;
-    const c = sh.tinted ?? document.createElement('canvas');
-    c.width = sh.img.naturalWidth;
-    c.height = sh.img.naturalHeight;
+  // recolour both sprites to the current ink: one fill each, no per-pixel work
+  const paint = (src: HTMLImageElement, into: HTMLCanvasElement | null) => {
+    const c = into ?? document.createElement('canvas');
+    c.width = src.naturalWidth;
+    c.height = src.naturalHeight;
     const x = c.getContext('2d')!;
+    x.globalCompositeOperation = 'source-over';
     x.clearRect(0, 0, c.width, c.height);
-    x.drawImage(sh.img, 0, 0);
+    x.drawImage(src, 0, 0);
     x.globalCompositeOperation = 'source-in';
     x.fillStyle = ink;
     x.fillRect(0, 0, c.width, c.height);
-    sh.tinted = c;
-
-    // outline = silhouette minus an eroded copy of itself (erosion = intersect 8 shifted copies)
-    const r = 3; // px at sprite resolution, ≈1.3 px on screen
-    const er = document.createElement('canvas');
-    er.width = c.width;
-    er.height = c.height;
-    const ex = er.getContext('2d')!;
-    ex.drawImage(c, 0, 0);
-    ex.globalCompositeOperation = 'destination-in';
-    for (const [dx, dy] of [
-      [r, 0],
-      [-r, 0],
-      [0, r],
-      [0, -r],
-      [r * 0.7, r * 0.7],
-      [-r * 0.7, r * 0.7],
-      [r * 0.7, -r * 0.7],
-      [-r * 0.7, -r * 0.7],
-    ])
-      ex.drawImage(c, dx, dy);
-    const o = sh.outline ?? document.createElement('canvas');
-    o.width = c.width;
-    o.height = c.height;
-    const ox = o.getContext('2d')!;
-    ox.clearRect(0, 0, o.width, o.height);
-    ox.drawImage(c, 0, 0);
-    ox.globalCompositeOperation = 'destination-out';
-    ox.drawImage(er, 0, 0);
-    sh.outline = o;
+    return c;
+  };
+  const tint = (key: 'snow' | 'skate') => {
+    const sh = sheets[key];
+    if (!sh.img || !sh.outlineImg) return;
+    sh.tinted = paint(sh.img, sh.tinted);
+    sh.outline = paint(sh.outlineImg, sh.outline);
   };
   loadSheet('snow');
   loadSheet('skate');
@@ -617,7 +606,7 @@ export function createMachine(opts: MachineOptions): Machine {
     const r = container.getBoundingClientRect();
     width = Math.max(1, r.width);
     height = Math.max(1, r.height);
-    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    dpr = Math.min(window.devicePixelRatio || 1, 1.5);
     canvas.width = Math.round(width * dpr);
     canvas.height = Math.round(height * dpr);
     canvas.style.width = width + 'px';
@@ -634,6 +623,8 @@ export function createMachine(opts: MachineOptions): Machine {
     cache.height = Math.round(H * scale * dpr);
     cacheValid = false;
     camX = clampCam(camX);
+    // not running (reduced motion): park the camera on the middle of the machine
+    if (pannable && !running && !userPanned) camX = camTarget = clampCam(760 * scale - width / 2);
   }
   const maxCam = () => Math.max(0, W * scale - width);
   const clampCam = (x: number) => Math.min(maxCam(), Math.max(0, x));
@@ -1040,7 +1031,7 @@ export function createMachine(opts: MachineOptions): Machine {
     for (const l of labelPos) {
       let x = offX - camX + l.x * scale;
       const y = offY + l.y * scale;
-      if (pannable && l.stop < 0) {
+      if (pannable && l.stop < 0 && running) {
         // phones: keep the active callout fully on screen while the drawing pans
         const box = l.el.firstElementChild as HTMLElement | null;
         const w = (l.w ||= box?.offsetWidth ?? 0);
@@ -1061,7 +1052,7 @@ export function createMachine(opts: MachineOptions): Machine {
     if (c < C.takeoff[0]) return 1330;
     const pl = planePose(c);
     if (c < C.done) return pl.p[0];
-    return STOPS[STOPS.length - 1].x;
+    return 760; // landed: drift back to the middle of the machine
   }
 
   /* ---------------------------------------------------------- physics */
@@ -1126,7 +1117,7 @@ export function createMachine(opts: MachineOptions): Machine {
     last = now;
     if (running) clock += dt;
     if (balls.length) stepBalls(dt);
-    if (pannable && !userPanned) camTarget = focusX(clock) * scale - width / 2;
+    if (pannable && !userPanned) camTarget = (running ? focusX(clock) : 760) * scale - width / 2;
     frame();
     if (!finaleFired && clock >= CHAIN0 + C.stamp) {
       finaleFired = true;
@@ -1143,7 +1134,7 @@ export function createMachine(opts: MachineOptions): Machine {
 
   fit();
   if (reduced) {
-    camTarget = camX = 0;
+    if (pannable) camTarget = camX = clampCam(760 * scale - width / 2);
     finaleFired = true;
     opts.onFinale?.();
   }

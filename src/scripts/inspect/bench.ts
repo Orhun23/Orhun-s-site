@@ -33,7 +33,8 @@ type Item = {
   near: boolean;
   p: number;
   played: boolean;
-  seen: boolean; // auto mode: has it been on screen (enough) yet
+  seen: boolean;
+  out: { clip: string; scan: string; scanOn: boolean; pct: number; bar: string; rows: number; done: boolean }; // auto mode: has it been on screen (enough) yet
 };
 
 export function initBench() {
@@ -56,6 +57,7 @@ export function initBench() {
     p: -1,
     played: false,
     seen: false,
+    out: { clip: '', scan: '', scanOn: false, pct: -1, bar: '', rows: -1, done: false },
   }));
   if (!items.length) return;
 
@@ -85,23 +87,38 @@ export function initBench() {
     } else update(it);
   }
 
-  function apply(it: Item, p: number) {
+  // writes only: every value is compared with what's already on the page, so an idle frame
+  // touches nothing and a scroll frame only touches what changed
+  function apply(it: Item, p: number, viewW = it.view.clientWidth) {
     if (p === it.p) return;
     it.p = p;
+    const o = it.out;
     it.engine?.setProgress(p / 0.7);
     const wipe = clamp01((p - 0.74) / 0.18);
     if (it.photo) {
-      it.photo.style.clipPath = `inset(0 0 0 ${((1 - wipe) * 100).toFixed(2)}%)`;
-      it.scan.style.opacity = wipe > 0 && wipe < 1 ? '1' : '0';
-      it.scan.style.transform = `translateX(${((1 - wipe) * it.view.clientWidth).toFixed(1)}px)`;
+      const clip = `inset(0 0 0 ${((1 - wipe) * 100).toFixed(1)}%)`;
+      if (clip !== o.clip) it.photo.style.clipPath = o.clip = clip;
+      const on = wipe > 0 && wipe < 1;
+      if (on !== o.scanOn) it.scan.style.opacity = (o.scanOn = on) ? '1' : '0';
+      const scan = `translateX(${((1 - wipe) * viewW).toFixed(0)}px)`;
+      if (on && scan !== o.scan) it.scan.style.transform = o.scan = scan;
     }
     const done = wipe >= 1;
-    it.el.classList.toggle('is-done', done);
-    it.engine?.setActive(!done && it.near); // the photo covers the drawing: stop drawing it
+    if (done !== o.done) {
+      it.el.classList.toggle('is-done', (o.done = done));
+      it.engine?.setActive(!done && it.near); // the photo covers the drawing: stop drawing it
+    }
     status(it);
-    it.pctEl.textContent = String(Math.round(p * 100));
-    it.bar.style.transform = `scaleX(${p.toFixed(3)})`;
-    it.rows.forEach((r, i) => r.classList.toggle('is-on', p > 0.1 + i * 0.1));
+    const pct = Math.round(p * 100);
+    if (pct !== o.pct) {
+      it.pctEl.textContent = String((o.pct = pct));
+      it.bar.style.transform = `scaleX(${(pct / 100).toFixed(2)})`;
+    }
+    const rows = it.rows.filter((_, i) => p > 0.1 + i * 0.1).length;
+    if (rows !== o.rows) {
+      o.rows = rows;
+      it.rows.forEach((r, i) => r.classList.toggle('is-on', i < rows));
+    }
   }
 
   // what the HUD says: the inspection reads like a log
@@ -129,6 +146,18 @@ export function initBench() {
     const r = it.el.getBoundingClientRect();
     const total = r.height - innerHeight;
     apply(it, total > 0 ? clamp01(-r.top / total) : 1);
+  }
+
+  // all reads first, then all writes: no read-after-write layout in the scroll frame
+  let viewH = innerHeight;
+  function updateAll() {
+    const live = items.filter((it) => it.near && it.engine && it.mode === 'scroll' && !reduced);
+    const reads = live.map((it) => [it.el.getBoundingClientRect(), it.view.clientWidth] as const);
+    live.forEach((it, i) => {
+      const [r, vw] = reads[i];
+      const total = r.height - viewH;
+      apply(it, total > 0 ? clamp01(-r.top / total) : 1, vw);
+    });
   }
 
   function play(it: Item) {
@@ -178,11 +207,14 @@ export function initBench() {
     ticking = true;
     requestAnimationFrame(() => {
       ticking = false;
-      for (const it of items) if (it.near && it.engine) update(it);
+      updateAll();
     });
   };
   addEventListener('scroll', onScroll, { passive: true });
-  addEventListener('resize', onScroll, { passive: true });
+  addEventListener('resize', () => {
+    viewH = innerHeight;
+    onScroll();
+  });
 
   // cursor: tilt the model; over the finished photo it's an x-ray lens
   for (const it of items) {
