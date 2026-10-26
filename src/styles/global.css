@@ -132,6 +132,58 @@ body::before {
   background-position: -1px -1px;
 }
 
+/* ---------- the inspection bench: always dark, whatever the theme ----------
+   Re-declaring the tokens re-skins everything inside, canvas drawings included. */
+.on-bench {
+  --bg: #0d0e10;
+  --bg-raised: #17181b;
+  --ink: #e9e8e2;
+  --ink-2: #b6b5af;
+  --ink-3: #8c8b86;
+  --line: rgb(233 232 226 / 0.13);
+  --line-strong: rgb(233 232 226 / 0.36);
+  --accent-text: var(--orange);
+  background-color: var(--bg);
+  color: var(--ink);
+  /* blueprint grid: finer and brighter than the paper grid outside */
+  background-image:
+    linear-gradient(rgb(233 232 226 / 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(233 232 226 / 0.05) 1px, transparent 1px),
+    linear-gradient(rgb(233 232 226 / 0.022) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(233 232 226 / 0.022) 1px, transparent 1px);
+  background-size:
+    96px 96px,
+    96px 96px,
+    16px 16px,
+    16px 16px;
+}
+/* fixed chrome takes the bench colours while the bench is under it */
+[data-bench-top] .header,
+[data-bench-bottom] .tb {
+  --bg: #0d0e10;
+  --ink: #e9e8e2;
+  --ink-2: #b6b5af;
+  --ink-3: #8c8b86;
+  --line: rgb(233 232 226 / 0.13);
+  --line-strong: rgb(233 232 226 / 0.36);
+  --accent-text: var(--orange);
+  color: var(--ink);
+}
+.header,
+.tb {
+  transition:
+    background-color 240ms ease,
+    color 240ms ease;
+}
+:root[data-theme='dark'] .on-bench {
+  --bg: #08090a;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .on-bench {
+    --bg: #08090a;
+  }
+}
+
 /* ---------- layout helpers ---------- */
 .wrap {
   width: 100%;

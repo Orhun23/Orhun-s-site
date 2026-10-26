@@ -5,8 +5,10 @@ order: 2
 started: 2022-12-15
 finished: 2023-02-14
 summary: Fully 3D printed, with a faceplate that lifts itself. About 50 hours of printing.
-cover: ../../assets/media/builds/helmet/finished.jpg
-coverAlt: A finished red and gold Iron Man helmet on a white shelf
+cover: ../../assets/media/builds/helmet/clean.jpg
+model: helmet
+xray: ../../assets/media/xray/iron-man-helmet.webp
+coverAlt: The finished red and gold Iron Man helmet photographed on a plain grey background
 specs:
   - ['Build time', '~2 months']
   - ['Manufacturing', '100% 3D printed']
@@ -16,14 +18,15 @@ specs:
   - ['Finish', 'Primer, gold, red, patience']
 dimensions: []
 callouts:
-  - { at: [58, 37], label: 'Faceplate — lifts up and over', dir: right }
-  - { at: [36, 50], label: 'Servo arms, inside each side', dir: left }
-  - { at: [52, 60], label: 'Hand-sanded, a lot', dir: right }
+  - { at: [56, 43], label: 'Faceplate — lifts up and over', dir: right }
+  - { at: [76, 50], label: 'Servo + arms, inside', dir: right }
+  - { at: [30, 66], label: 'Hand-sanded, a lot', dir: left }
 gallery:
   - { src: ../../assets/media/builds/helmet/raw-parts.jpg, alt: 'Raw white 3D printed faceplate and cheek parts held in a hand', caption: 'Fig. 2 — Straight off the printer' }
   - { src: ../../assets/media/builds/helmet/electronics.jpg, alt: 'Servo, battery and breadboard wiring for the faceplate mechanism on a desk', caption: 'Fig. 3 — The brains, on a breadboard' }
   - { src: ../../assets/media/builds/helmet/primer.jpg, alt: 'The helmet in grey primer next to a pair of spoons for scale', caption: 'Fig. 4 — Primer. Spoons for scale.' }
   - { src: ../../assets/media/builds/helmet/white-assembled.jpg, alt: 'Assembled white helmet with a green LED glowing behind it', caption: 'Fig. 5 — First full assembly' }
+  - { src: ../../assets/media/builds/helmet/finished.jpg, alt: 'The finished helmet on a white shelf at home', caption: 'Fig. 7 — On the shelf, where it lives now' }
 video:
   src: /media/builds/helmet/faceplate.mp4
   poster: ../../assets/media/builds/helmet/faceplate.jpg

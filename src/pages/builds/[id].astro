@@ -4,6 +4,7 @@ import type { CollectionEntry } from 'astro:content';
 import Base from '../../layouts/Base.astro';
 import Annotated from '../../components/Annotated.astro';
 import Plate from '../../components/Plate.astro';
+import Inspector from '../../components/Inspector.astro';
 import { span } from '../../lib/format';
 
 export async function getStaticPaths() {
@@ -41,8 +42,13 @@ const d = build.data;
       </header>
 
       <div class:list={['bd__main', !d.cover && 'bd__main--text']}>
+        {d.model && d.cover && (
+          <div class="bd__cover bd__cover--bench on-bench">
+            <Inspector build={build} mode="auto" compact eager />
+          </div>
+        )}
         {
-          d.cover && (
+          !d.model && d.cover && (
             <div class="bd__cover">
               <Annotated
                 src={d.cover}
@@ -107,7 +113,16 @@ const d = build.data;
   </article>
 </Base>
 
+<script>
+  import { initBench } from '../../scripts/inspect/bench';
+  initBench();
+</script>
+
 <style>
+  .bd__cover--bench {
+    padding: 0.75rem;
+    border: 1px solid var(--line-strong);
+  }
   .bd {
     padding-top: calc(var(--frame) + 6rem);
     padding-bottom: calc(var(--frame) + 5rem);

@@ -6,6 +6,8 @@ started: 2024-02-02
 finished: 2024-06-17
 summary: Designed, built and programmed a CoreXY printer from zero, with a team of four.
 cover: ../../assets/media/builds/printer/finished.jpg
+model: printer
+xray: ../../assets/media/xray/3d-printer.webp
 coverAlt: The finished CoreXY 3D printer, a black aluminium-extrusion cube with blue printed brackets, on a lab table
 specs:
   - ['Build time', '~4.5 months']

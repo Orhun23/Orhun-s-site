@@ -16,6 +16,9 @@ const builds = defineCollection({
       finished: z.coerce.date().optional(), // omit = still going
       summary: z.string(), // one blunt line for the index
       cover: image().optional(), // text-only builds are fine
+      // the inspection bench: which exploded line model to show, and the edge scan for the x-ray lens
+      model: z.enum(['tallbike', 'helmet', 'xwing', 'printer']).optional(),
+      xray: image().optional(),
       coverAlt: z.string().optional(),
       specs: z.array(z.tuple([z.string(), z.string()])),
       // drawn over the cover: dimension lines and leader callouts

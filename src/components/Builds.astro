@@ -1,76 +1,50 @@
 ---
 import { getCollection } from 'astro:content';
-import Annotated from './Annotated.astro';
-import { span } from '../lib/format';
+import Inspector from './Inspector.astro';
 
 const builds = (await getCollection('builds')).sort((a, b) => a.data.order - b.data.order);
-const withCover = builds.filter((b) => b.data.cover);
-const textOnly = builds.filter((b) => !b.data.cover);
+const inspected = builds.filter((b) => b.data.model && b.data.cover);
+const rest = builds.filter((b) => !(b.data.model && b.data.cover));
 ---
 
-<section id="builds" class="builds" data-sheet="03" data-sheet-title="Builds">
-  <div class="wrap">
+<section id="builds" class="bench on-bench" data-sheet="03" data-sheet-title="Builds — inspection">
+  <div class="bench__intro wrap">
     <header class="sheet-head mono">
       <span class="accent">Sheet 03</span>
-      <span>Builds — bill of materials</span>
+      <span>Builds — inspection bench</span>
       <span class="mono-meta">{builds.length} items · none of them were assigned</span>
     </header>
-
-    <h2 class="builds__title display" data-reveal>
+    <h2 class="bench__title display">
       Things nobody<br />asked me to build.
     </h2>
-
-    <ol class="builds__list" role="list">
+    <p class="bench__lede">
+      Scroll to put each one together. Every build starts as an exploded drawing, gets assembled part by part, measured,
+      and then scanned into the real thing. Move the cursor to turn the drawing, hover the photo to see through it.
+    </p>
+    <ol class="bench__index mono" role="list">
       {
-        withCover.map((b, i) => (
-          <li class:list={['build', i % 2 && 'build--flip']}>
-            <a class="build__media" href={`/builds/${b.id}/`} tabindex="-1" aria-hidden="true">
-              <Annotated
-                src={b.data.cover!}
-                alt=""
-                dims={b.data.dimensions}
-                callouts={b.data.callouts}
-                sizes="(max-width: 860px) 100vw, 55vw"
-              />
+        inspected.map((b) => (
+          <li>
+            <a href={`#build-${b.id}`} class="link-draw">
+              <span class="accent">{b.data.code}</span> {b.data.title}
             </a>
-            <div class="build__info">
-              <p class="build__code mono">
-                <span class="accent">{b.data.code}</span>
-                <span class="mono-meta">{span(b.data.started, b.data.finished)}</span>
-              </p>
-              <h3 class="build__name display" data-reveal>
-                <a href={`/builds/${b.id}/`} class="build__link">
-                  {b.data.title}
-                </a>
-              </h3>
-              <p class="build__summary" data-reveal style="--i:1">
-                {b.data.summary}
-              </p>
-              <dl class="build__specs mono" data-reveal style="--i:2">
-                {b.data.specs.slice(0, 4).map(([k, v]) => (
-                  <div>
-                    <dt class="mono-meta">{k}</dt>
-                    <dd>{v}</dd>
-                  </div>
-                ))}
-              </dl>
-              <span class="build__open mono" aria-hidden="true">
-                Open drawing <span class="build__arrow">→</span>
-              </span>
-            </div>
           </li>
         ))
       }
     </ol>
+  </div>
 
+  {inspected.map((b) => <Inspector build={b} />)}
+
+  <div class="wrap bench__rest">
     {
-      textOnly.map((b) => (
+      rest.map((b) => (
         <a class="build-mini" href={`/builds/${b.id}/`}>
           <span class="mono accent">{b.data.code}</span>
           <span class="build-mini__name display">{b.data.title}</span>
           <span class="build-mini__sum">{b.data.summary}</span>
-          <span class="mono build__open" aria-hidden="true">
-            Open <span class="build__arrow">→</span>
+          <span class="mono build-mini__open" aria-hidden="true">
+            Open <span>→</span>
           </span>
         </a>
       ))
@@ -78,110 +52,50 @@ const textOnly = builds.filter((b) => !b.data.cover);
   </div>
 </section>
 
+<script>
+  import { initBench } from '../scripts/inspect/bench';
+  initBench();
+</script>
+
 <style>
-  .builds {
-    padding-block: var(--space-xl);
-  }
-  .builds__title {
-    font-size: var(--step-4);
-    margin-block: var(--space-l) var(--space-xl);
-  }
-  .builds__list {
-    display: grid;
-    gap: var(--space-xl);
-  }
-  .build {
+  .bench {
     position: relative;
-    display: grid;
-    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
-    gap: var(--space-l) clamp(2rem, 5vw, 6rem);
-    align-items: center;
-  }
-  .build--flip .build__media {
-    order: 2;
-  }
-  .build__media {
-    display: block;
-  }
-  /* frame is sized from the photo's ratio: never taller than 82% of the screen,
-     and the % callout coordinates land on the photo, not the column */
-  .build__media :global(.ann__frame) {
-    width: min(100%, calc(82svh * var(--arn)));
-    margin-inline: auto;
-  }
-  .build__code {
-    display: flex;
-    gap: 1rem;
-  }
-  .build__name {
-    font-size: var(--step-4);
-    margin-block: 0.6rem 1.2rem;
-  }
-  .build__link {
-    text-decoration: none;
-  }
-  /* whole row is clickable through the title link */
-  .build__link::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-  }
-  .build__summary {
-    font-size: var(--step-1);
-    color: var(--ink-2);
-    max-width: 34ch;
-  }
-  .build__specs {
-    margin-top: var(--space-m);
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    border-top: 1px solid var(--line-strong);
-  }
-  .build__specs div {
-    padding: 0.55rem 0.75rem 0.55rem 0;
-    border-bottom: 1px solid var(--line);
-  }
-  .build__specs dd {
-    text-transform: none;
-    letter-spacing: 0;
-  }
-  .build__open {
-    display: inline-flex;
-    gap: 0.5rem;
-    margin-top: var(--space-m);
-  }
-  .build__arrow {
-    display: inline-block;
-    color: var(--accent-text);
-    transition: transform var(--dur-ui) var(--ease-out);
-  }
-  @media (hover: hover) and (pointer: fine) {
-    .build:hover .build__arrow,
-    .build-mini:hover .build__arrow {
-      transform: translateX(6px);
-    }
-    .build__name a {
-      transition: color var(--dur-hover) ease;
-    }
-    .build:hover .build__name a {
-      color: var(--accent-text);
-    }
-  }
-  .build:has(.build__link:focus-visible) {
-    outline: 2px solid var(--accent);
-    outline-offset: 12px;
-  }
-  .build__link:focus-visible {
-    outline: none;
+    padding-bottom: var(--space-xl);
   }
 
+  .bench__intro {
+    padding-top: var(--space-xl);
+  }
+  .bench__title {
+    font-size: var(--step-5);
+    letter-spacing: -0.045em;
+    margin-block: var(--space-l) var(--space-m);
+  }
+  .bench__lede {
+    max-width: 52ch;
+    font-size: var(--step-1);
+    color: var(--ink-2);
+  }
+  .bench__index {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 2rem;
+    margin-top: var(--space-l);
+    padding-top: 1rem;
+    border-top: 1px solid var(--line);
+  }
+  .bench :global(.insp) {
+    scroll-margin-top: 0;
+  }
+
+  .bench__rest {
+    margin-top: var(--space-l);
+  }
   .build-mini {
     display: grid;
     grid-template-columns: auto auto 1fr auto;
     align-items: baseline;
     gap: 1.5rem;
-    margin-top: var(--space-xl);
     padding-block: 1.4rem;
     border-block: 1px solid var(--line-strong);
     text-decoration: none;
@@ -192,20 +106,17 @@ const textOnly = builds.filter((b) => !b.data.cover);
   .build-mini__sum {
     color: var(--ink-2);
   }
-  .build-mini .build__open {
-    margin: 0;
+  .build-mini__open span {
+    display: inline-block;
+    color: var(--accent-text);
+    transition: transform var(--dur-ui) var(--ease-out);
   }
-
+  @media (hover: hover) and (pointer: fine) {
+    .build-mini:hover .build-mini__open span {
+      transform: translateX(6px);
+    }
+  }
   @media (max-width: 860px) {
-    .build {
-      grid-template-columns: 1fr;
-    }
-    .build--flip .build__media {
-      order: 0;
-    }
-    .build__media :global(.ann__frame) {
-      width: 100%;
-    }
     .build-mini {
       grid-template-columns: auto 1fr;
       gap: 0.4rem 1rem;

@@ -92,7 +92,7 @@ const frame = (rear: V3, bb: V3, st: V3, ht: V3, hb: V3): Seg[] => [
   ...tube(ht, hb, 0.022),
 ];
 
-type PartDef = {
+export type PartDef = {
   code: string;
   name: string;
   segs: Seg[];
@@ -105,7 +105,7 @@ type PartDef = {
 };
 
 const SADDLE_TOP = 1.77;
-const parts: PartDef[] = [
+export const parts: PartDef[] = [
   {
     code: 'P-03',
     name: 'Lower frame, donor #1',
@@ -231,12 +231,12 @@ const parts: PartDef[] = [
 ];
 
 /* ---------- drawing furniture: ground line + dimension lines (orange) ---------- */
-const DIM_X = -0.5;
-const DIM_Y = -0.14;
-const groundSegs: Seg[] = [[p(-0.55, 0), p(1.6, 0)]];
+export const DIM_X = -0.5;
+export const DIM_Y = -0.14;
+export const groundSegs: Seg[] = [[p(-0.55, 0), p(1.6, 0)]];
 for (let x = -0.5; x < 1.6; x += 0.08) groundSegs.push([p(x, 0), p(x - 0.05, -0.05)]);
 
-const dimSegs: Seg[] = [
+export const dimSegs: Seg[] = [
   // overall height
   [p(DIM_X, 0), p(DIM_X, 1.8)],
   [p(DIM_X - 0.04, 0), p(DIM_X + 0.04, 0)],

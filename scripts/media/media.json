@@ -23,6 +23,9 @@
   {"src": "personal project photos/own 3d printer build/IMG_5951.JPG.jpeg", "out": "builds/printer/toolhead-cad"},
   {"src": "personal project photos/own 3d printer build/IMG_5952.MP4", "out": "builds/printer/printing"},
 
+  {"src": "additionalpics/dmey1mzd2grza3bi9e_result_0.png", "out": "builds/helmet/clean"},
+  {"src": "additionalpics/xwing better pic.PNG", "out": "builds/xwing/clean"},
+  {"src": "additionalpics/IMG_5973.PNG", "out": "builds/xwing/detail"},
   {"src": "personal project photos/xwing/IMG_5929.PNG", "out": "builds/xwing/finished"},
   {"src": "personal project photos/xwing/IMG_5934.JPG.jpeg", "out": "builds/xwing/spray"},
   {"src": "personal project photos/xwing/IMG_5936.PNG", "out": "builds/xwing/weathered"},

@@ -6,6 +6,8 @@ started: 2022-08-12
 finished: 2022-09-14
 summary: Two bikes, one on top of the other. It works. Getting on is the hard part.
 cover: ../../assets/media/builds/tallbike/finished.jpg
+model: tallbike
+xray: ../../assets/media/xray/tallbike.webp
 coverAlt: A finished tallbike, two black bike frames welded on top of each other, standing in a university hallway
 specs:
   - ['Build time', '~5 weeks']

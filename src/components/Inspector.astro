@@ -1,0 +1,416 @@
+---
+// One build on the inspection bench.
+//   scroll mode (homepage): pinned while you scroll; the exploded line model assembles, the
+//     dimensions draw in, then a scanner wipes the drawing into the real photo.
+//   auto mode (build pages): plays the same sequence once on load.
+// After the wipe, the cursor is an x-ray lens that shows an edge scan of the photo.
+import type { CollectionEntry } from 'astro:content';
+import { Picture, getImage } from 'astro:assets';
+import { span } from '../lib/format';
+
+interface Props {
+  build: CollectionEntry<'builds'>;
+  mode?: 'scroll' | 'auto';
+  compact?: boolean; // no info column (build pages have their own)
+  eager?: boolean;
+}
+const { build, mode = 'scroll', compact = false, eager = false } = Astro.props;
+const d = build.data;
+const xray = d.xray ? await getImage({ src: d.xray, format: 'webp', width: d.xray.width }) : null;
+const parts = d.specs.slice(0, 5);
+---
+
+<article
+  class:list={['insp', `insp--${mode}`, compact && 'insp--compact']}
+  id={compact ? undefined : `build-${build.id}`}
+  data-insp
+  data-mode={mode}
+  data-model={d.model}
+  aria-labelledby={compact ? undefined : `insp-${build.id}`}
+>
+  <div class="insp__stage">
+    <div class="insp__hud mono">
+      <span><span class="accent">{d.code}</span> · Inspection</span>
+      <span class="insp__part" data-insp-part aria-hidden="true">Exploded view</span>
+      <span class="insp__pct" aria-hidden="true"><span data-insp-pct>0</span>%</span>
+      <span class="insp__bar" aria-hidden="true"><span data-insp-bar></span></span>
+    </div>
+
+    <div class="insp__view" data-insp-view>
+      <div class="insp__canvas" data-insp-canvas></div>
+      <div class="insp__overlay" data-insp-overlay aria-hidden="true"></div>
+      {
+        d.cover && (
+          <figure class="insp__photo" data-insp-photo>
+            <Picture
+              src={d.cover}
+              alt={d.coverAlt ?? ''}
+              formats={['avif', 'webp']}
+              widths={[480, 800, 1200].filter((w) => w <= d.cover!.width)}
+              sizes="(max-width: 860px) 100vw, 55vw"
+              loading={eager ? 'eager' : 'lazy'}
+              class="insp__img"
+            />
+            {xray && (
+              <div class="insp__xray" data-insp-xray aria-hidden="true">
+                <img src={xray.src} alt="" loading="lazy" decoding="async" />
+              </div>
+            )}
+          </figure>
+        )
+      }
+      <span class="insp__scan" data-insp-scan aria-hidden="true"></span>
+      {
+        xray && (
+          <button class="insp__xbtn btn" type="button" data-insp-xbtn aria-pressed="false">
+            X-ray
+          </button>
+        )
+      }
+      <p class="insp__hint mono mono-meta" aria-hidden="true">
+        <span class="hint-fine">Move to tilt · hover the photo for x-ray</span>
+      </p>
+    </div>
+
+    {
+      !compact && (
+        <div class="insp__info">
+          <p class="mono insp__meta">
+            <span class="accent">{d.code}</span>
+            <span class="mono-meta">{span(d.started, d.finished)}</span>
+          </p>
+          <h3 class="insp__title display" id={`insp-${build.id}`}>
+            <a href={`/builds/${build.id}/`}>{d.title}</a>
+          </h3>
+          <p class="insp__summary">{d.summary}</p>
+          <dl class="insp__specs mono">
+            {parts.map(([k, v], i) => (
+              <div data-insp-row style={`--i:${i}`}>
+                <dt class="mono-meta">{k}</dt>
+                <dd>{v}</dd>
+              </div>
+            ))}
+          </dl>
+          <a class="insp__open mono" href={`/builds/${build.id}/`}>
+            Open the full drawing <span aria-hidden="true">→</span>
+          </a>
+        </div>
+      )
+    }
+  </div>
+</article>
+
+<style>
+  .insp {
+    position: relative;
+  }
+  :global(.js) .insp--scroll {
+    height: 270svh;
+  }
+  .insp__stage {
+    display: grid;
+    grid-template-columns: minmax(0, 7fr) minmax(0, 4fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 1rem clamp(2rem, 4vw, 4.5rem);
+    padding-block: calc(var(--frame) + 4.4rem) calc(var(--frame) + 2.8rem);
+    padding-inline: calc(var(--frame) + var(--gutter));
+    max-width: var(--max);
+    margin-inline: auto;
+  }
+  .insp--scroll .insp__stage {
+    height: 100svh;
+    min-height: 560px;
+  }
+  :global(.js) .insp--scroll .insp__stage {
+    position: sticky;
+    top: 0;
+  }
+  .insp--compact .insp__stage {
+    grid-template-columns: 1fr;
+    padding: 0;
+    height: min(78svh, 760px);
+  }
+
+  /* HUD: what's being fitted, how far along */
+  .insp__hud {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: baseline;
+    gap: 1.25rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid var(--line);
+    position: relative;
+  }
+  .insp__hud > span:first-child {
+    white-space: nowrap;
+  }
+  .insp__part {
+    color: var(--ink-2);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .insp__pct {
+    margin-left: auto;
+    font-variant-numeric: tabular-nums;
+  }
+  .insp__bar {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 1px;
+    overflow: hidden;
+  }
+  .insp__bar span {
+    display: block;
+    height: 100%;
+    background: var(--accent);
+    transform-origin: left;
+    transform: scaleX(0);
+  }
+
+  .insp__view {
+    position: relative;
+    min-height: 0;
+    overflow: hidden;
+    cursor: crosshair;
+    touch-action: pan-y;
+  }
+  .insp__canvas,
+  .insp__overlay {
+    position: absolute;
+    inset: 0;
+  }
+  .insp__overlay {
+    pointer-events: none;
+  }
+  .insp__overlay :global(.xl-leaders) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+  }
+  .insp__overlay :global(.xl-leaders line) {
+    stroke: var(--ink-3);
+    stroke-width: 1;
+  }
+  .insp__overlay :global(.xl-label),
+  .insp__overlay :global(.xl-dim) {
+    position: absolute;
+    top: 0;
+    left: 0;
+    white-space: nowrap;
+    font-size: 10px;
+    will-change: transform, opacity;
+  }
+  .insp__overlay :global(.xl-label) {
+    padding: 0.15rem 0.35rem;
+    background: var(--bg);
+    border: 1px solid var(--line-strong);
+  }
+  .insp__overlay :global(.xl-dim) {
+    color: var(--accent-text);
+    background: var(--bg);
+    padding: 0.05rem 0.3rem;
+  }
+
+  /* the photo is wiped in by the scanner (clip-path set from JS) */
+  .insp__photo {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    clip-path: inset(0 0 0 100%);
+    background: var(--bg);
+  }
+  :global(.no-js) .insp__photo {
+    clip-path: none;
+  }
+  .insp__photo :global(picture),
+  .insp__photo :global(img) {
+    width: 100%;
+    height: 100%;
+  }
+  .insp__photo :global(img) {
+    object-fit: contain;
+  }
+  .insp__scan {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 1px;
+    background: var(--accent);
+    box-shadow: 0 0 18px 2px rgb(255 79 0 / 0.45);
+    opacity: 0;
+    pointer-events: none;
+    will-change: transform;
+  }
+
+  /* x-ray lens: a circle of edge scan over the photo, follows the cursor */
+  @property --r {
+    syntax: '<length>';
+    inherits: false;
+    initial-value: 0px;
+  }
+  .insp__xray {
+    --r: 0px;
+    --mx: 50%;
+    --my: 50%;
+    position: absolute;
+    inset: 0;
+    background: color-mix(in srgb, var(--graphite) 90%, transparent);
+    clip-path: circle(var(--r) at var(--mx) var(--my));
+    transition: --r 320ms var(--ease-out);
+    pointer-events: none;
+  }
+  .insp__xray img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+  .insp.is-done .insp__view:hover .insp__xray {
+    --r: 110px;
+  }
+  .insp.is-xray .insp__xray {
+    --r: 160vmax !important;
+  }
+  .insp__xbtn {
+    position: absolute;
+    right: 0.6rem;
+    bottom: 0.6rem;
+    padding: 0.45em 0.8em;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 200ms ease;
+  }
+  .insp.is-done .insp__xbtn {
+    opacity: 1;
+    visibility: visible;
+  }
+  .insp__hint {
+    position: absolute;
+    left: 0;
+    bottom: 0.4rem;
+    font-size: 9.5px;
+  }
+  @media (hover: none) {
+    .insp__hint {
+      display: none;
+    }
+  }
+  :global(.no-js) .insp__hint,
+  :global(.no-js) .insp__xbtn,
+  :global(.no-js) .insp__hud {
+    display: none;
+  }
+
+  /* info column */
+  .insp__info {
+    align-self: center;
+  }
+  .insp__meta {
+    display: flex;
+    gap: 1rem;
+  }
+  .insp__title {
+    font-size: var(--step-4);
+    margin-block: 0.5rem 1rem;
+  }
+  .insp__title a {
+    text-decoration: none;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .insp__title a:hover {
+      color: var(--accent-text);
+    }
+  }
+  .insp__summary {
+    font-size: var(--step-1);
+    color: var(--ink-2);
+    max-width: 32ch;
+  }
+  .insp__specs {
+    margin-top: var(--space-m);
+    border-top: 1px solid var(--line-strong);
+  }
+  .insp__specs div {
+    display: grid;
+    grid-template-columns: 12ch 1fr;
+    gap: 1rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .insp__specs dd {
+    text-transform: none;
+    letter-spacing: 0;
+  }
+  /* spec rows tick in as the inspection runs */
+  :global(.js) .insp--scroll [data-insp-row] {
+    opacity: 0.18;
+    transition: opacity 260ms var(--ease-out);
+  }
+  :global(.js) .insp--scroll [data-insp-row].is-on {
+    opacity: 1;
+  }
+  .insp__open {
+    display: inline-flex;
+    gap: 0.5rem;
+    margin-top: var(--space-m);
+    text-decoration: none;
+  }
+  .insp__open span {
+    color: var(--accent-text);
+    transition: transform var(--dur-ui) var(--ease-out);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .insp__open:hover span {
+      transform: translateX(6px);
+    }
+  }
+
+  @media (max-width: 860px) {
+    .insp__stage {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      gap: 0.75rem;
+      padding-top: calc(var(--frame) + 3.6rem);
+      padding-bottom: calc(var(--frame) + 2.2rem);
+    }
+    .insp__title {
+      font-size: var(--step-3);
+      margin-block: 0.25rem 0.4rem;
+    }
+    .insp__summary {
+      font-size: var(--step-0);
+    }
+    .insp__specs,
+    .insp__meta {
+      display: none;
+    }
+    .insp__open {
+      margin-top: 0.5rem;
+    }
+    .insp__overlay :global([data-desktop-only]) {
+      display: none;
+    }
+    .insp__overlay :global(.xl-label),
+    .insp__overlay :global(.xl-dim) {
+      font-size: 9px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    :global(.js) .insp--scroll {
+      height: auto;
+    }
+    :global(.js) .insp--scroll .insp__stage {
+      position: relative;
+    }
+    .insp__xray {
+      transition: none;
+    }
+  }
+</style>

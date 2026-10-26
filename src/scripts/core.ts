@@ -47,6 +47,25 @@ if (tbNo && tbTitle && sheets.length) {
   sheets.forEach((s) => sheetIO.observe(s));
 }
 
+/* ---------- chrome over the dark bench: header (top band) and title block (bottom band) ---------- */
+const benches = document.querySelectorAll('.on-bench');
+if (benches.length) {
+  const root = document.documentElement;
+  const band = (attr: string, margin: string) => {
+    const hits = new Set<Element>();
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) e.isIntersecting ? hits.add(e.target) : hits.delete(e.target);
+        root.toggleAttribute(attr, hits.size > 0);
+      },
+      { rootMargin: margin },
+    );
+    benches.forEach((b) => io.observe(b));
+  };
+  band('data-bench-top', '0px 0px -94% 0px');
+  band('data-bench-bottom', '-94% 0px 0px 0px');
+}
+
 /* ---------- local time in Eindhoven ---------- */
 const clocks = document.querySelectorAll<HTMLTimeElement>('[data-clock]');
 if (clocks.length) {
