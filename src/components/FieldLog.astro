@@ -6,7 +6,7 @@ import { trips } from '../data/trips';
 
 import snowJump from '../assets/media/field/snow-jump.jpg';
 import skateTrocadero from '../assets/media/field/skate-trocadero.jpg';
-import chrono from '../assets/media/field/backfull-chronophoto.jpg';
+import backfullPoster from '../assets/media/field/backfull.jpg';
 import surf from '../assets/media/field/surf.jpg';
 import bowlAir from '../assets/media/field/skate-bowl-air.jpg';
 import bowl from '../assets/media/field/skate-bowl.jpg';
@@ -72,31 +72,26 @@ import whalePoster from '../assets/media/trips/whale-shark.jpg';
       </div>
     </div>
 
-    <!-- one still, five exposures: the backfull, aligned frame by frame -->
+    <!-- the backfull, just the clip -->
     <div class="study">
       <div class="study__text">
-        <p class="mono"><span class="accent">Fig. 04</span> — Motion study</p>
-        <h3 class="study__title display" data-reveal>Backfull, Cape Verde.</h3>
+        <p class="mono"><span class="accent">Fig. 04</span> — Cape Verde, Sep 2026</p>
+        <h3 class="study__title display" data-reveal>Backfull.</h3>
         <p class="study__body" data-reveal style="--i:1">
-          A backflip with a full twist, into a pool. Five frames from a handheld phone clip, each one aligned to
-          the background and pasted back where I actually was. Same idea as the machine up top, just wetter.
+          A backflip with a full twist, into a pool, on the first trip after the job ended.
         </p>
         <dl class="study__spec mono" data-reveal style="--i:2">
-          <div><dt class="mono-meta">Exposures</dt><dd>5, over ≈ 0.9 s</dd></div>
-          <div><dt class="mono-meta">Rotation</dt><dd>360° back + full twist</dd></div>
+          <div><dt class="mono-meta">Airtime</dt><dd>≈ 0.9 s</dd></div>
+          <div><dt class="mono-meta">Rotation</dt><dd>360° back + 360° twist</dd></div>
           <div><dt class="mono-meta">Landing</dt><dd>Wet</dd></div>
         </dl>
       </div>
-      <Annotated
-        class="study__img"
-        src={chrono}
-        alt="One photo showing five exposures of Orhun flipping backwards off a pool deck: takeoff, laid out, upside down, twisting, and hitting the water"
-        callouts={[
-          { at: [42, 70], label: 'Takeoff', dir: 'left' },
-          { at: [57, 23], label: 'Inverted', dir: 'right' },
-          { at: [83, 88], label: 'Entry', dir: 'right' },
-        ]}
-        sizes="(max-width: 860px) 100vw, 60vw"
+      <Plate
+        class="study__video"
+        src="/media/field/backfull.mp4"
+        webm="/media/field/backfull.webm"
+        poster={backfullPoster}
+        alt="Orhun doing a backflip with a full twist off the edge of a pool in Cape Verde, landing in turquoise water"
       />
     </div>
 
@@ -232,7 +227,8 @@ import whalePoster from '../assets/media/trips/whale-shark.jpg';
   }
   .study {
     display: grid;
-    grid-template-columns: minmax(0, 4fr) minmax(0, 7fr);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 360px);
+    justify-content: space-between;
     gap: var(--space-l) clamp(2rem, 5vw, 5rem);
     align-items: center;
     margin-top: var(--space-xl);
@@ -246,6 +242,7 @@ import whalePoster from '../assets/media/trips/whale-shark.jpg';
     max-width: 40ch;
   }
   .study__spec {
+    max-width: 26rem;
     margin-top: var(--space-m);
     border-top: 1px solid var(--line-strong);
   }
@@ -387,6 +384,9 @@ import whalePoster from '../assets/media/trips/whale-shark.jpg';
   @media (max-width: 860px) {
     .study {
       grid-template-columns: 1fr;
+    }
+    .study :global(.study__video) {
+      width: min(100%, 340px);
     }
     .field__intro,
     .trip {

@@ -6,6 +6,7 @@ import { getImage } from 'astro:assets';
 
 interface Props {
   src: string;
+  webm?: string; // optional smaller VP9 version, listed first so browsers that can play it do
   poster: ImageMetadata;
   alt: string;
   fig?: string;
@@ -15,13 +16,14 @@ interface Props {
   class?: string;
 }
 
-const { src, poster, alt, fig, caption, meta, ratio = '9 / 16', class: cls } = Astro.props;
+const { src, webm, poster, alt, fig, caption, meta, ratio = '9 / 16', class: cls } = Astro.props;
 const p = await getImage({ src: poster, width: Math.min(poster.width, 900), format: 'webp' });
 ---
 
 <figure class:list={['plate', cls]} data-plate>
   <div class="plate__frame" style={`aspect-ratio:${ratio}`} data-reveal="wipe">
     <video muted playsinline loop preload="none" data-poster={p.src} data-autoplay aria-label={alt}>
+      {webm && <source src={webm} type="video/webm" />}
       <source src={src} type="video/mp4" />
     </video>
     <noscript><img class="plate__still" src={p.src} alt={alt} loading="lazy" /></noscript>
