@@ -132,12 +132,6 @@ body::before {
   background-position: -1px -1px;
 }
 
-/* ---------- below-the-fold sheets: skip style/layout/paint until they're near ---------- */
-main > section:not(:first-child) {
-  content-visibility: auto;
-  contain-intrinsic-size: auto 1400px;
-}
-
 /* ---------- layout helpers ---------- */
 .wrap {
   width: 100%;

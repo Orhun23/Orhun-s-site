@@ -102,17 +102,11 @@ const textOnly = builds.filter((b) => !b.data.cover);
   }
   .build__media {
     display: block;
-    max-height: 82svh;
   }
-  /* frame hugs the image so the % callout coordinates land on the photo, not the column */
+  /* frame is sized from the photo's ratio: never taller than 82% of the screen,
+     and the % callout coordinates land on the photo, not the column */
   .build__media :global(.ann__frame) {
-    width: fit-content;
-    max-width: 100%;
-    margin-inline: auto;
-  }
-  .build__media :global(img) {
-    max-height: 82svh;
-    width: auto;
+    width: min(100%, calc(82svh * var(--arn)));
     margin-inline: auto;
   }
   .build__code {
@@ -209,10 +203,8 @@ const textOnly = builds.filter((b) => !b.data.cover);
     .build--flip .build__media {
       order: 0;
     }
-    .build__media,
-    .build__media :global(.ann__frame),
-    .build__media :global(img) {
-      max-height: none;
+    .build__media :global(.ann__frame) {
+      width: 100%;
     }
     .build-mini {
       grid-template-columns: auto 1fr;

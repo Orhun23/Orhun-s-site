@@ -59,7 +59,7 @@ const [line1, line2] = site.heroLine;
 </section>
 
 <script>
-  import { reducedMotion, finePointer, cssVar } from '../scripts/env';
+  import { reducedMotion, finePointer, cssVar, swapText } from '../scripts/env';
 
   const section = document.querySelector<HTMLElement>('[data-hero]')!;
   const canvasBox = section.querySelector<HTMLElement>('[data-hero-canvas]')!;
@@ -143,7 +143,7 @@ const [line1, line2] = site.heroLine;
         hero.setShift(r);
         reveal(r);
         cue.style.opacity = String(1 - gsap.utils.clamp(0, 1, p * 12));
-        view.textContent = p > 0.5 ? 'assembled view' : 'exploded view';
+        swapText(view, p > 0.5 ? 'assembled view' : 'exploded view');
       },
     });
 

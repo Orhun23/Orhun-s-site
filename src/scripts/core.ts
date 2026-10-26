@@ -1,32 +1,31 @@
 // Site-wide behaviour. Everything cheap runs right away; smooth scroll, GSAP and the
 // magnetic buttons load at idle so they never sit between the user and the first paint.
-import { reducedMotion } from './env';
-
-/** swap text with a short opacity + blur cross-fade, so it doesn't just teleport */
-const swapText = (el: Element, text: string) => {
-  if (el.textContent === text) return;
-  el.textContent = text;
-  (el as HTMLElement).animate(
-    reducedMotion() ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 0, filter: 'blur(2px)' }, { opacity: 1, filter: 'blur(0)' }],
-    { duration: 180, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' },
-  );
-};
+import { reducedMotion, swapText } from './env';
 
 const idle = (fn: () => void) =>
   'requestIdleCallback' in window ? requestIdleCallback(fn, { timeout: 1500 }) : setTimeout(fn, 200);
 
 /* ---------- reveals ---------- */
+// Chrome's IntersectionObserver honours the target's own clip-path, and a wipe element starts
+// fully clipped, so it would never intersect. Watch its (unclipped) parent instead.
+const revealTargets = new Map<Element, Element[]>(); // watched element → elements to reveal
 const revealIO = new IntersectionObserver(
   (entries) => {
     for (const e of entries) {
       if (!e.isIntersecting) continue;
-      e.target.classList.add('is-in');
+      revealTargets.get(e.target)?.forEach((el) => el.classList.add('is-in'));
       revealIO.unobserve(e.target);
     }
   },
   { rootMargin: '0px 0px -12% 0px' },
 );
-document.querySelectorAll('[data-reveal], [data-draw]').forEach((el) => revealIO.observe(el));
+document.querySelectorAll('[data-reveal], [data-draw]').forEach((el) => {
+  const watch = el.getAttribute('data-reveal') === 'wipe' && el.parentElement ? el.parentElement : el;
+  const list = revealTargets.get(watch);
+  if (list) list.push(el);
+  else revealTargets.set(watch, [el]);
+  revealIO.observe(watch);
+});
 
 /* ---------- title block: which sheet are we on ---------- */
 const tbNo = document.querySelector('[data-tb-no]');
@@ -35,12 +34,12 @@ const sheets = [...document.querySelectorAll<HTMLElement>('[data-sheet]')];
 if (tbNo && tbTitle && sheets.length) {
   const sheetIO = new IntersectionObserver(
     (entries) => {
-      for (const e of entries) {
-        if (!e.isIntersecting) continue;
-        const el = e.target as HTMLElement;
-        swapText(tbNo, el.dataset.sheet ?? '');
-        swapText(tbTitle, el.dataset.sheetTitle ?? '');
-      }
+      // a fast jump can deliver several sheets in one batch: only the last one counts
+      const hit = entries.filter((e) => e.isIntersecting).at(-1);
+      if (!hit) return;
+      const el = hit.target as HTMLElement;
+      swapText(tbNo, el.dataset.sheet ?? '');
+      swapText(tbTitle, el.dataset.sheetTitle ?? '');
     },
     // a thin band across the middle of the viewport decides the "current" sheet
     { rootMargin: '-50% 0px -50% 0px' },

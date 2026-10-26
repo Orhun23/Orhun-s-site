@@ -397,6 +397,7 @@ export function createHero(opts: HeroOptions): HeroScene {
   const introStart = performance.now();
   const tilt = { x: 0, y: 0, tx: 0, ty: 0, vy: 0 };
   let dragAngle = 0;
+  let lastDrag = 0;
   let active = true;
   let raf = 0;
   let width = 1;
@@ -594,7 +595,12 @@ export function createHero(opts: HeroOptions): HeroScene {
     },
     drag(dx) {
       if (reduced) return;
-      tilt.vy = dx * 0.006;
+      // velocity in radians per 60 fps frame, from real time between pointer events,
+      // so a swipe spins the same on 60 Hz and 120 Hz screens
+      const now = performance.now();
+      const dt = Math.min(Math.max(now - lastDrag, 4), 50);
+      lastDrag = now;
+      tilt.vy = ((dx * 0.006) / dt) * 16.67;
       kick();
     },
     setActive(on) {

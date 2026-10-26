@@ -143,12 +143,7 @@ const d = build.data;
     max-width: 44rem;
   }
   .bd__cover :global(.ann__frame) {
-    width: fit-content;
-    max-width: 100%;
-  }
-  .bd__cover :global(img) {
-    max-height: 86svh;
-    width: auto;
+    width: min(100%, calc(86svh * var(--arn)));
   }
   .bd__spec {
     position: sticky;
@@ -270,8 +265,7 @@ const d = build.data;
     .bd__video {
       width: min(100%, 360px);
     }
-    .bd__cover :global(img) {
-      max-height: none;
+    .bd__cover :global(.ann__frame) {
       width: 100%;
     }
   }

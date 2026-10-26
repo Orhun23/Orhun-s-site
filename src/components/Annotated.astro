@@ -36,7 +36,11 @@ const {
 ---
 
 <figure class:list={['ann', cls]} data-draw>
-  <div class="ann__frame" data-reveal={eager ? undefined : 'wipe'}>
+  <div
+    class="ann__frame"
+    data-reveal={eager ? undefined : 'wipe'}
+    style={`--ar:${src.width} / ${src.height};--arn:${(src.width / src.height).toFixed(4)}`}
+  >
     <Picture
       src={src}
       alt={alt}
@@ -102,8 +106,10 @@ const {
   .ann {
     position: relative;
   }
+  /* the frame knows its aspect ratio before the image loads, so nothing jumps */
   .ann__frame {
     position: relative;
+    aspect-ratio: var(--ar);
     border: 1px solid var(--line-strong);
     background: var(--bg-raised);
   }
