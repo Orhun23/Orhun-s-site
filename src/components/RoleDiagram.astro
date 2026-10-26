@@ -1,0 +1,301 @@
+---
+// One schematic per role, drawn as SVG. Every stroke has pathLength=1 so it can draw itself;
+// labels fade in after their lines. Simplified on purpose: these explain the job, they're not
+// the real drawings.
+import type { Diagram } from '../data/roles';
+
+interface Props {
+  kind: Diagram;
+}
+const { kind } = Astro.props;
+
+const titles: Record<Diagram, string> = {
+  sorter: 'Loop sorter, simplified: parcels inducted onto a loop, sorted out to destinations; PLCs, safety and the flow controller around it',
+  determinism: 'Two control architectures side by side, PLC hardware versus control in containers on IT hardware, and an illustrative plot of cycle-time jitter',
+  'behaviour-tree': 'A simplified behaviour tree for an AGV-fed bin registration station',
+  'driver-stack': 'Software layers from the application down to the BLDC motor, next to three phase currents',
+  robot: 'Simplified software architecture of a competition robot: sensors and depth camera into vision and a main controller, out to the drive and mechanisms',
+};
+
+// destination chutes along the loop
+const chutes = Array.from({ length: 26 }, (_, i) => 150 + i * 20);
+---
+
+<figure class="rd" data-draw>
+  <svg viewBox="0 0 800 420" role="img" aria-label={titles[kind]}>
+    {
+      kind === 'sorter' && (
+        <g>
+          <path class="d" pathLength="1" style="--i:0" d="M150 150 H650 A60 60 0 0 1 650 270 H150 A60 60 0 0 1 150 150 Z" />
+          <path class="d" pathLength="1" style="--i:1" d="M150 166 H650 A44 44 0 0 1 650 254 H150 A44 44 0 0 1 150 166 Z" />
+          {chutes.map((x, i) => (
+            <>
+              <path class="d f" pathLength="1" style={`--i:${2 + i * 0.05}`} d={`M${x} 150 v-34`} />
+              <path class="d f" pathLength="1" style={`--i:${2 + i * 0.05}`} d={`M${x} 270 v34`} />
+            </>
+          ))}
+          <path class="d a" pathLength="1" style="--i:3" d="M30 210 H92 M40 190 L96 196 M40 230 L96 224" />
+          <rect class="d" pathLength="1" style="--i:4" x="275" y="345" width="250" height="44" />
+          <path class="d f dash" pathLength="1" style="--i:5" d="M400 345 V280" />
+          <rect class="d" pathLength="1" style="--i:4.5" x="560" y="345" width="190" height="44" />
+          <path class="d f dash" pathLength="1" style="--i:5" d="M655 345 V310" />
+          <rect class="d" pathLength="1" style="--i:4.2" x="40" y="345" width="200" height="44" />
+          <path class="d f dash" pathLength="1" style="--i:5" d="M140 345 V300" />
+          <circle class="parcel" r="6" />
+          <text x="20" y="140" class="t" style="--i:3.4">Induct ×3</text>
+          <text x="330" y="105" class="t" style="--i:2.8">Destinations: 800+ on the big one</text>
+          <text x="370" y="214" class="t" style="--i:2">Loop</text>
+          <text x="54" y="372" class="t" style="--i:5.2">PLCs · Profinet</text>
+          <text x="291" y="372" class="t" style="--i:5.4">Flow controller (Debian)</text>
+          <text x="578" y="372" class="t" style="--i:5.6">FSC safety</text>
+        </g>
+      )
+    }
+    {
+      kind === 'determinism' && (
+        <g>
+          <text x="40" y="40" class="t" style="--i:0">A — Classic: control on PLC hardware</text>
+          <rect class="d" pathLength="1" style="--i:0.3" x="40" y="60" width="140" height="60" />
+          <text x="58" y="96" class="t" style="--i:0.6">PLC</text>
+          <path class="d" pathLength="1" style="--i:0.8" d="M180 90 H260" />
+          <rect class="d" pathLength="1" style="--i:1" x="260" y="60" width="110" height="60" />
+          <text x="284" y="96" class="t" style="--i:1.2">I/O</text>
+
+          <text x="430" y="40" class="t" style="--i:1.4">B — Control as software on IT hardware</text>
+          <rect class="d" pathLength="1" style="--i:1.6" x="430" y="60" width="200" height="60" />
+          <rect class="d a" pathLength="1" style="--i:1.9" x="442" y="70" width="54" height="40" />
+          <rect class="d a" pathLength="1" style="--i:2" x="504" y="70" width="54" height="40" />
+          <rect class="d a" pathLength="1" style="--i:2.1" x="566" y="70" width="54" height="40" />
+          <text x="440" y="140" class="t" style="--i:2.2">Server · Docker containers</text>
+          <path class="d dash" pathLength="1" style="--i:2.3" d="M630 90 H690" />
+          <rect class="d" pathLength="1" style="--i:2.5" x="690" y="60" width="80" height="60" />
+          <text x="712" y="96" class="t" style="--i:2.6">I/O</text>
+
+          <path class="d" pathLength="1" style="--i:3" d="M60 380 H760 M60 380 V200" />
+          <text x="66" y="198" class="t" style="--i:3.1">Cycle time</text>
+          <text x="660" y="402" class="t" style="--i:3.1">Time →</text>
+          <path class="d" pathLength="1" style="--i:3.4" d="M60 330 H760" />
+          <text x="66" y="322" class="t" style="--i:3.6">A: same every cycle</text>
+          <path
+            class="d a"
+            pathLength="1"
+            style="--i:3.8"
+            d="M60 262 L90 255 L120 268 L150 250 L180 272 L210 258 L240 241 L270 266 L300 254 L330 270 L360 236 L390 262 L420 255 L450 275 L480 249 L510 260 L540 230 L570 266 L600 253 L630 271 L660 247 L690 259 L720 238 L760 262"
+          />
+          <text x="66" y="226" class="t a" style="--i:4">B: jitter. How much is the question.</text>
+          <text x="500" y="420" class="t f" style="--i:4.2">Illustrative, not measured data</text>
+        </g>
+      )
+    }
+    {
+      kind === 'behaviour-tree' && (
+        <g>
+          <rect class="d" pathLength="1" style="--i:0" x="360" y="20" width="80" height="34" />
+          <text x="380" y="42" class="t" style="--i:0.2">Root</text>
+          <path class="d" pathLength="1" style="--i:0.4" d="M400 54 V84" />
+          <rect class="d a" pathLength="1" style="--i:0.6" x="340" y="84" width="120" height="36" />
+          <text x="356" y="107" class="t a" style="--i:0.8">→ Sequence</text>
+          <path class="d f" pathLength="1" style="--i:1" d="M400 120 V140 H90 V170 M400 140 H250 V170 M400 140 V170 M400 140 H560 V170 M400 140 H720 V170" />
+          {[
+            [30, 'AGV docked?', true],
+            [190, 'Scan bin', false],
+            [340, '? Fallback', false],
+            [500, 'Register bin', false],
+            [660, 'Release AGV', false],
+          ].map(([x, label, cond], i) => (
+            <>
+              <rect
+                class:list={['d', cond && 'cond']}
+                pathLength="1"
+                style={`--i:${1.4 + i * 0.25}`}
+                x={x as number}
+                y="170"
+                width="120"
+                height="36"
+                rx={cond ? 18 : 0}
+              />
+              <text x={(x as number) + 12} y="193" class="t" style={`--i:${1.6 + i * 0.25}`}>
+                {label}
+              </text>
+            </>
+          ))}
+          <path class="d f" pathLength="1" style="--i:2.8" d="M400 206 V236 H320 V262 M400 236 H480 V262" />
+          <rect class="d cond" pathLength="1" style="--i:3" x="250" y="262" width="140" height="36" rx="18" />
+          <text x="266" y="285" class="t" style="--i:3.2">Label valid?</text>
+          <rect class="d" pathLength="1" style="--i:3.2" x="420" y="262" width="120" height="36" />
+          <text x="436" y="285" class="t" style="--i:3.4">Reject bin</text>
+          <text x="30" y="350" class="t f" style="--i:3.6">→ runs children in order until one fails · ? tries children until one succeeds</text>
+          <text x="30" y="372" class="t f" style="--i:3.7">Rounded = condition. Simplified from the real tree.</text>
+        </g>
+      )
+    }
+    {
+      kind === 'driver-stack' && (
+        <g>
+          {['Application', 'BLDC driver library (C++)', 'Register map', 'I²C bus', 'MCF8329A gate driver (FOC)', '3-phase BLDC motor'].map((l, i) => (
+            <>
+              <rect class:list={['d', i === 1 && 'a']} pathLength="1" style={`--i:${i * 0.4}`} x="40" y={30 + i * 60} width="320" height="44" />
+              <text x="58" y={57 + i * 60} class:list={['t', i === 1 && 'a']} style={`--i:${0.2 + i * 0.4}`}>
+                {l}
+              </text>
+              {i < 5 && <path class="d f" pathLength="1" style={`--i:${0.3 + i * 0.4}`} d={`M200 ${74 + i * 60} V${90 + i * 60}`} />}
+            </>
+          ))}
+          <text x="380" y="88" class="t a" style="--i:0.8">← the part I wrote</text>
+          <path class="d" pathLength="1" style="--i:2.4" d="M440 210 H770 M440 120 V300" />
+          <path class="d" pathLength="1" style="--i:2.6" d="M440 210 C470 130, 500 130, 530 210 S590 290, 620 210 S680 130, 710 210 S760 270, 770 250" />
+          <path class="d a" pathLength="1" style="--i:2.8" d="M440 280 C460 270, 480 200, 500 160 S560 140, 590 220 S650 290, 680 250 S740 140, 770 160" />
+          <path class="d f" pathLength="1" style="--i:3" d="M440 150 C470 140, 500 200, 530 270 S590 230, 620 160 S690 150, 710 250 S760 280, 770 270" />
+          <text x="446" y="112" class="t" style="--i:3.2">Phase currents U · V · W (sketch)</text>
+        </g>
+      )
+    }
+    {
+      kind === 'robot' && (
+        <g>
+          {[
+            [40, 60, 'Depth camera'],
+            [40, 150, 'Sensors'],
+          ].map(([x, y, l], i) => (
+            <>
+              <rect class="d" pathLength="1" style={`--i:${i * 0.3}`} x={x as number} y={y as number} width="160" height="44" />
+              <text x={(x as number) + 14} y={(y as number) + 27} class="t" style={`--i:${0.2 + i * 0.3}`}>
+                {l}
+              </text>
+            </>
+          ))}
+          <rect class="d a" pathLength="1" style="--i:1" x="290" y="40" width="200" height="84" />
+          <text x="306" y="78" class="t a" style="--i:1.2">Vision</text>
+          <text x="306" y="100" class="t" style="--i:1.3">Python + OpenCV</text>
+          <rect class="d" pathLength="1" style="--i:1.4" x="290" y="170" width="200" height="110" />
+          <text x="306" y="206" class="t" style="--i:1.6">Main controller</text>
+          <text x="306" y="228" class="t f" style="--i:1.7">architecture: mine</text>
+          <path class="d f" pathLength="1" style="--i:1.8" d="M200 82 H290 M200 172 H290 M390 124 V170" />
+          {['Drive', 'Mechanisms'].map((l, i) => (
+            <>
+              <rect class="d" pathLength="1" style={`--i:${2 + i * 0.3}`} x="590" y={60 + i * 100} width="160" height="44" />
+              <text x="604" y={87 + i * 100} class="t" style={`--i:${2.2 + i * 0.3}`}>
+                {l}
+              </text>
+              <path class="d f" pathLength="1" style={`--i:${2.1 + i * 0.3}`} d={`M490 225 L590 ${82 + i * 100}`} />
+            </>
+          ))}
+          <text x="40" y="380" class="t f" style="--i:3">Simplified. Real diagram on the whiteboard below.</text>
+        </g>
+      )
+    }
+  </svg>
+</figure>
+
+<style>
+  .rd {
+    margin: 0;
+    color: var(--ink);
+  }
+  svg {
+    width: 100%;
+    height: auto;
+    overflow: visible;
+  }
+  /* phones: keep the drawing readable and let it scroll sideways inside its frame */
+  @media (max-width: 760px) {
+    .rd {
+      overflow-x: auto;
+      overscroll-behavior-x: contain;
+      padding-bottom: 0.5rem;
+    }
+    svg {
+      width: 680px;
+      max-width: none;
+    }
+  }
+  .d {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.2; /* no non-scaling-stroke: it breaks pathLength-based dash drawing */
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .d.f {
+    stroke: var(--ink-3);
+    stroke-width: 0.9;
+  }
+  .d.a {
+    stroke: var(--accent);
+  }
+  .d.dash {
+    stroke-dasharray: 4 4;
+  }
+  .d.cond {
+    stroke: var(--ink-2);
+  }
+  .t {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    fill: currentColor;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+  .t.f {
+    fill: var(--ink-3);
+    font-size: 11.5px;
+  }
+  .t.a {
+    fill: var(--accent-text);
+  }
+  .parcel {
+    fill: var(--accent);
+    offset-path: path('M150 158 H650 A52 52 0 0 1 650 262 H150 A52 52 0 0 1 150 158 Z');
+    animation: travel 9s linear infinite;
+    opacity: 0;
+  }
+  @keyframes travel {
+    to {
+      offset-distance: 100%;
+    }
+  }
+
+  /* drawing in: lines plot themselves, labels follow */
+  :global(.js) .rd .d:not(.dash) {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    transition: stroke-dashoffset 900ms var(--ease-in-out);
+    transition-delay: calc(var(--i, 0) * 180ms);
+  }
+  :global(.js) .rd .t {
+    opacity: 0;
+    transition: opacity 300ms ease;
+    transition-delay: calc(var(--i, 0) * 180ms + 400ms);
+  }
+  :global(.js) .rd.is-in .d {
+    stroke-dashoffset: 0;
+  }
+  :global(.js) .rd .d.dash {
+    opacity: 0;
+    transition: opacity 300ms ease;
+    transition-delay: calc(var(--i, 0) * 180ms);
+  }
+  :global(.js) .rd.is-in .d.dash,
+  :global(.js) .rd.is-in .t,
+  :global(.js) .rd.is-in .parcel,
+  :global(.no-js) .parcel {
+    opacity: 1;
+  }
+  :global(.js) .rd .parcel {
+    transition: opacity 400ms ease 1.6s;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    :global(.js) .rd .d:not(.dash) {
+      stroke-dasharray: none;
+      transition: none;
+    }
+    :global(.js) .rd .t {
+      transition: opacity 200ms ease;
+    }
+    .parcel {
+      animation: none;
+      offset-distance: 30%;
+    }
+  }
+</style>

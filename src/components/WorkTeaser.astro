@@ -29,7 +29,7 @@ import { roles } from '../data/work';
         {
           roles.map((r, i) => (
             <li style={`--i:${i}`} data-reveal>
-              <a href={`/work#${r.id}`} class="wt__row">
+              <a href={`/work/${r.id}`} class="wt__row">
                 <span class="wt__when mono mono-meta">
                   {r.from.slice(-4)}
                   {r.from.slice(-4) !== r.to.slice(-4) && `–${r.to.slice(-2)}`}

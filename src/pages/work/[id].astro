@@ -1,0 +1,449 @@
+---
+// One page per role. Only this role's words, figures and diagram.
+import { Picture } from 'astro:assets';
+import Base from '../../layouts/Base.astro';
+import RoleDiagram from '../../components/RoleDiagram.astro';
+import { roles } from '../../data/work';
+import { roleExtras } from '../../data/roles';
+
+export function getStaticPaths() {
+  return roles.map((role, i) => ({
+    params: { id: role.id },
+    props: { i },
+  }));
+}
+
+const { i } = Astro.props as { i: number };
+const role = roles[i];
+const x = roleExtras[role.id];
+const prev = roles[(i - 1 + roles.length) % roles.length];
+const next = roles[(i + 1) % roles.length];
+const code = `W-${String(i + 1).padStart(2, '0')}`;
+---
+
+<Base
+  title={`${role.org} — ${role.title}`}
+  description={`${role.title} at ${role.org}, ${role.from} – ${role.to}. ${role.summary}`}
+  sheet={{ no: code, title: role.org }}
+>
+  <article class="role wrap">
+    <nav class="role__crumbs mono" aria-label="Breadcrumb">
+      <a class="link-draw" href="/work">← Work</a>
+      <span class="mono-meta">/ {code}</span>
+    </nav>
+
+    <header class="role__head">
+      <p class="mono">
+        <span class="accent">{code}</span>
+        <span class="mono-meta"> · {role.from} – {role.to} · {role.place}</span>
+      </p>
+      <h1 class="role__org display">{role.org}</h1>
+      <p class="role__title">{role.title}</p>
+    </header>
+
+    <div class="role__intro">
+      <div class="role__text">
+        <p class="role__company" data-reveal>{x.company}</p>
+        <p class="role__context" data-reveal style="--i:1">{x.context}</p>
+      </div>
+      <dl class="role__facts mono" data-reveal style="--i:2">
+        {
+          x.facts.map(([k, v]) => (
+            <div>
+              <dt class="mono-meta">{k}</dt>
+              <dd>{v}</dd>
+            </div>
+          ))
+        }
+      </dl>
+    </div>
+
+    <section class="role__diagram on-bench" aria-label="Schematic">
+      <p class="mono role__fig">
+        <span class="accent">Fig. 1</span> — How it fits together <span class="mono-meta role__swipe">· swipe →</span>
+      </p>
+      <RoleDiagram kind={x.diagram} />
+    </section>
+
+    <!-- numbered steps: tabs on wide screens, a plain list on phones -->
+    <section class="steps" aria-labelledby="steps-h" data-steps>
+      <h2 id="steps-h" class="sheet-head mono">
+        <span class="accent">02</span><span>What I actually did</span><span class="mono-meta">{x.steps.length} steps</span>
+      </h2>
+      <div class="steps__tabs" role="tablist" aria-label="Steps" style={`--n:${x.steps.length}`}>
+        {
+          x.steps.map((s, j) => (
+            <button
+              class="steps__tab"
+              role="tab"
+              id={`tab-${j}`}
+              aria-controls={`panel-${j}`}
+              aria-selected={j === 0 ? 'true' : 'false'}
+              tabindex={j === 0 ? 0 : -1}
+              type="button"
+            >
+              <span class="mono steps__no">{String(j + 1).padStart(2, '0')}</span>
+              <span class="steps__name">{s.title}</span>
+            </button>
+          ))
+        }
+      </div>
+      {
+        x.steps.map((s, j) => (
+          <div class="steps__panel" role="tabpanel" id={`panel-${j}`} aria-labelledby={`tab-${j}`} hidden={j !== 0}>
+            <p class="mono steps__no steps__no--panel">{String(j + 1).padStart(2, '0')} · {s.title}</p>
+            <p class="steps__text">{s.text}</p>
+          </div>
+        ))
+      }
+      <p class="role__stack mono">{role.stack.map((s) => <span>{s}</span>)}</p>
+    </section>
+
+    {
+      x.figures.length > 0 && (
+        <section class="figs" aria-labelledby="figs-h">
+          <h2 id="figs-h" class="sheet-head mono">
+            <span class="accent">03</span>
+            <span>On the job</span>
+            <span class="mono-meta">{x.figures.length} figures</span>
+          </h2>
+          <div class="figs__grid">
+            {x.figures.map((f, j) => (
+              <figure class="fig" data-reveal style={`--i:${j % 3}`}>
+                <div class="fig__img crop">
+                  <Picture
+                    src={f.src}
+                    alt={f.alt}
+                    formats={['avif', 'webp']}
+                    widths={[400, 700, 1000].filter((w) => w <= f.src.width)}
+                    sizes="(max-width: 760px) 100vw, 33vw"
+                    loading="lazy"
+                  />
+                </div>
+                <figcaption class="mono">
+                  <span class="accent">Fig. {j + 2}</span> — {f.caption}
+                </figcaption>
+              </figure>
+            ))}
+          </div>
+        </section>
+      )
+    }
+
+    <nav class="role__pager" aria-label="Other roles">
+      <a href={`/work/${prev.id}`} class="role__pg">
+        <span class="mono mono-meta">← Previous</span>
+        <span class="role__pg-org">{prev.org}</span>
+        <span class="mono mono-meta">{prev.title}</span>
+      </a>
+      <a href={`/work/${next.id}`} class="role__pg role__pg--next">
+        <span class="mono mono-meta">Next →</span>
+        <span class="role__pg-org">{next.org}</span>
+        <span class="mono mono-meta">{next.title}</span>
+      </a>
+    </nav>
+  </article>
+</Base>
+
+<script>
+  // WAI-ARIA tabs: click or arrow keys
+  const root = document.querySelector<HTMLElement>('[data-steps]');
+  if (root) {
+    const tabs = [...root.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
+    const panels = [...root.querySelectorAll<HTMLElement>('[role="tabpanel"]')];
+    const select = (k: number, focus = false) => {
+      tabs.forEach((t, j) => {
+        const on = j === k;
+        t.setAttribute('aria-selected', String(on));
+        t.tabIndex = on ? 0 : -1;
+        panels[j].hidden = !on;
+      });
+      if (focus) tabs[k].focus();
+    };
+    tabs.forEach((t, j) => {
+      t.addEventListener('click', () => select(j));
+      t.addEventListener('keydown', (e) => {
+        const n = tabs.length;
+        const k = e.key === 'ArrowRight' ? (j + 1) % n : e.key === 'ArrowLeft' ? (j - 1 + n) % n : e.key === 'Home' ? 0 : e.key === 'End' ? n - 1 : -1;
+        if (k < 0) return;
+        e.preventDefault();
+        select(k, true);
+      });
+    });
+  }
+</script>
+
+<style>
+  .role {
+    padding-top: calc(var(--frame) + 6rem);
+    padding-bottom: calc(var(--frame) + 5rem);
+  }
+  .role__crumbs {
+    display: flex;
+    gap: 0.5rem;
+  }
+  .role__head {
+    margin-block: var(--space-l);
+  }
+  .role__org {
+    font-size: var(--step-5);
+    letter-spacing: -0.045em;
+    margin-block: 0.75rem 0.5rem;
+  }
+  .role__title {
+    font-size: var(--step-2);
+    color: var(--ink-2);
+    letter-spacing: -0.015em;
+  }
+  .role__intro {
+    display: grid;
+    grid-template-columns: minmax(0, 7fr) minmax(0, 4fr);
+    gap: var(--space-l) clamp(2rem, 5vw, 6rem);
+    align-items: start;
+  }
+  .role__text {
+    display: grid;
+    gap: 1em;
+    max-width: 58ch;
+  }
+  .role__company {
+    font-size: var(--step-1);
+    color: var(--ink-2);
+  }
+  .role__context {
+    font-size: var(--step-2);
+    line-height: 1.25;
+    letter-spacing: -0.015em;
+  }
+  .role__facts {
+    border-top: 1px solid var(--line-strong);
+  }
+  .role__facts div {
+    display: grid;
+    grid-template-columns: 13ch 1fr;
+    gap: 1rem;
+    padding: 0.55rem 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .role__facts dd {
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  .role__diagram {
+    margin-block: var(--space-xl);
+    padding: clamp(1rem, 3vw, 2.5rem);
+  }
+  .role__fig {
+    margin-bottom: 1rem;
+  }
+  .role__swipe {
+    display: none;
+  }
+  @media (max-width: 760px) {
+    .role__swipe {
+      display: inline;
+    }
+  }
+
+  .steps__tabs {
+    display: grid;
+    grid-template-columns: repeat(var(--n, 4), minmax(0, 1fr));
+    margin-top: var(--space-m);
+    border-bottom: 1px solid var(--line-strong);
+  }
+  .steps__tab {
+    position: relative;
+    display: grid;
+    gap: 0.35rem;
+    text-align: left;
+    padding: 1rem 1rem 1.1rem 0;
+    color: var(--ink-3);
+    transition: color var(--dur-hover) ease;
+  }
+  .steps__tab::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 1rem;
+    bottom: -1px;
+    height: 2px;
+    background: var(--accent);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform var(--dur-ui) var(--ease-out);
+  }
+  .steps__tab[aria-selected='true'] {
+    color: var(--ink);
+  }
+  .steps__tab[aria-selected='true']::after {
+    transform: scaleX(1);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .steps__tab:hover {
+      color: var(--ink);
+    }
+  }
+  .steps__name {
+    font-size: var(--step-1);
+    font-weight: 650;
+    letter-spacing: -0.01em;
+  }
+  .steps__no {
+    color: var(--accent-text);
+  }
+  .steps__no--panel {
+    display: none;
+  }
+  .steps__panel {
+    padding-block: var(--space-m);
+    max-width: 60ch;
+    animation: step-in 260ms var(--ease-out);
+  }
+  @keyframes step-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+  }
+  .steps__text {
+    font-size: var(--step-2);
+    line-height: 1.3;
+    letter-spacing: -0.015em;
+  }
+  .role__stack {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+  .role__stack span {
+    padding: 0.25rem 0.55rem;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+  }
+
+  .figs {
+    margin-top: var(--space-xl);
+  }
+  .figs__grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: clamp(1rem, 2.5vw, 2rem);
+    margin-top: var(--space-m);
+  }
+  .fig {
+    margin: 0;
+  }
+  .fig__img {
+    aspect-ratio: 4 / 5;
+    background: var(--bg-raised);
+  }
+  .fig__img :global(img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .fig figcaption {
+    margin-top: 0.6rem;
+  }
+  /* crop marks on every photo, like a print waiting to be trimmed */
+  .crop {
+    position: relative;
+  }
+  .crop::before,
+  .crop::after {
+    content: '';
+    position: absolute;
+    inset: -8px;
+    pointer-events: none;
+    background:
+      linear-gradient(var(--ink), var(--ink)) top left / 14px 1px no-repeat,
+      linear-gradient(var(--ink), var(--ink)) top left / 1px 14px no-repeat,
+      linear-gradient(var(--ink), var(--ink)) top right / 14px 1px no-repeat,
+      linear-gradient(var(--ink), var(--ink)) top right / 1px 14px no-repeat;
+  }
+  .crop::after {
+    background:
+      linear-gradient(var(--ink), var(--ink)) bottom left / 14px 1px no-repeat,
+      linear-gradient(var(--ink), var(--ink)) bottom left / 1px 14px no-repeat,
+      linear-gradient(var(--ink), var(--ink)) bottom right / 14px 1px no-repeat,
+      linear-gradient(var(--ink), var(--ink)) bottom right / 1px 14px no-repeat;
+  }
+
+  .role__pager {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-top: var(--space-xl);
+    border-top: 1px solid var(--line-strong);
+  }
+  .role__pg {
+    display: grid;
+    gap: 0.3rem;
+    padding-block: var(--space-m);
+    text-decoration: none;
+  }
+  .role__pg--next {
+    text-align: right;
+  }
+  .role__pg-org {
+    font-size: var(--step-3);
+    font-weight: 750;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    transition: color var(--dur-hover) ease;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .role__pg:hover .role__pg-org {
+      color: var(--accent-text);
+    }
+  }
+
+  @media (max-width: 860px) {
+    .role__intro {
+      grid-template-columns: 1fr;
+    }
+    .figs__grid {
+      grid-template-columns: 1fr 1fr;
+    }
+    /* phones: tabs become a plain numbered list, everything visible */
+    .steps__tabs {
+      display: none;
+    }
+    .steps__panel[hidden] {
+      display: block;
+    }
+    .steps__panel {
+      border-bottom: 1px solid var(--line);
+      padding-block: 1rem;
+      animation: none;
+    }
+    .steps__no--panel {
+      display: block;
+      margin-bottom: 0.4rem;
+    }
+    .steps__text {
+      font-size: var(--step-1);
+    }
+    .role__stack {
+      margin-top: var(--space-m);
+    }
+  }
+  @media (max-width: 520px) {
+    .figs__grid {
+      grid-template-columns: 1fr;
+    }
+    .role__pager {
+      grid-template-columns: 1fr;
+    }
+    .role__pg--next {
+      text-align: left;
+      border-top: 1px solid var(--line);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .steps__panel {
+      animation: none;
+    }
+  }
+</style>
