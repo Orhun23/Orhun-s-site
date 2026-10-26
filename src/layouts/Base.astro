@@ -1,0 +1,99 @@
+---
+import { Font } from 'astro:assets';
+import '../styles/global.css';
+import SheetFrame from '../components/SheetFrame.astro';
+import Header from '../components/Header.astro';
+import TitleBlock from '../components/TitleBlock.astro';
+import { site, person } from '../data/site';
+
+interface Props {
+  title?: string;
+  description?: string;
+  /** sheet info shown in the title block before JS takes over */
+  sheet?: { no: string; title: string };
+  noindex?: boolean;
+  bare?: boolean; // no chrome (used by /og and /cv print)
+}
+
+const {
+  title,
+  description = site.description,
+  sheet = { no: '01', title: 'General arrangement' },
+  noindex = false,
+  bare = false,
+} = Astro.props;
+
+const fullTitle = title ? `${title} — ${person.name}` : site.title;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const ogImage = new URL('/og.png', Astro.site);
+---
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    {noindex && <meta name="robots" content="noindex" />}
+
+    <meta name="theme-color" content="#ecebe5" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#121314" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={person.name} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Wireframe drawing of a tallbike next to the line: I make machines do things. Then I go skateboarding." />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <script type="application/ld+json" set:html={JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'Person',
+      name: person.name,
+      jobTitle: person.role,
+      address: { '@type': 'PostalAddress', addressLocality: 'Eindhoven', addressCountry: 'NL' },
+      sameAs: [person.linkedin],
+      url: Astro.site?.toString(),
+    })} />
+
+    <Font cssVariable="--font-display" preload />
+    <Font cssVariable="--font-mono" preload />
+
+    <!-- before paint: theme + js flag, so nothing flashes -->
+    <script is:inline>
+      (() => {
+        const d = document.documentElement;
+        d.classList.replace('no-js', 'js');
+        try {
+          const t = localStorage.getItem('theme');
+          if (t === 'light' || t === 'dark') d.dataset.theme = t;
+        } catch {}
+      })();
+    </script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    {!bare && <SheetFrame />}
+    {!bare && <Header />}
+    <main id="main">
+      <slot />
+    </main>
+    {!bare && <TitleBlock sheet={sheet} />}
+    <slot name="after" />
+    {!bare && (
+      <script>
+        import '../scripts/core';
+      </script>
+    )}
+  </body>
+</html>

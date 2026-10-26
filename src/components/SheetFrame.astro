@@ -1,0 +1,99 @@
+---
+// The drawing border: a thin frame around the viewport with zone markers,
+// like the edge of an A-size engineering sheet. Purely decorative.
+const cols = ['1', '2', '3', '4', '5', '6', '7', '8'];
+const rows = ['A', 'B', 'C', 'D', 'E', 'F'];
+---
+
+<div class="frame" aria-hidden="true">
+  <div class="zones zones--top">{cols.map((c) => <span>{c}</span>)}</div>
+  <div class="zones zones--left">{rows.map((r) => <span>{r}</span>)}</div>
+  <div class="zones zones--right">{rows.map((r) => <span>{r}</span>)}</div>
+  <div class="zones zones--bottom">{cols.map((c) => <span>{c}</span>)}</div>
+</div>
+
+<style>
+  .frame {
+    position: fixed;
+    inset: var(--frame);
+    z-index: 40;
+    pointer-events: none;
+    border: 1px solid var(--line-strong);
+  }
+  .zones {
+    position: absolute;
+    display: flex;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--ink-3);
+    line-height: 1;
+  }
+  .zones span {
+    flex: 1;
+    display: grid;
+    place-items: center;
+    position: relative;
+  }
+  .zones--top,
+  .zones--bottom {
+    left: 0;
+    right: 0;
+    height: var(--frame);
+  }
+  .zones--top {
+    bottom: 100%;
+  }
+  .zones--bottom {
+    top: 100%;
+  }
+  .zones--left,
+  .zones--right {
+    top: 0;
+    bottom: 0;
+    width: var(--frame);
+    flex-direction: column;
+  }
+  .zones--left {
+    right: 100%;
+  }
+  .zones--right {
+    left: 100%;
+  }
+  /* tick between zones */
+  .zones--top span + span::before,
+  .zones--bottom span + span::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    width: 1px;
+    height: 5px;
+    background: var(--line-strong);
+  }
+  .zones--top span + span::before {
+    bottom: 0;
+  }
+  .zones--bottom span + span::before {
+    top: 0;
+  }
+  .zones--left span + span::before,
+  .zones--right span + span::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    height: 1px;
+    width: 5px;
+    background: var(--line-strong);
+  }
+  .zones--left span + span::before {
+    right: 0;
+  }
+  .zones--right span + span::before {
+    left: 0;
+  }
+
+  @media (max-width: 720px) {
+    .zones {
+      display: none;
+    }
+  }
+</style>

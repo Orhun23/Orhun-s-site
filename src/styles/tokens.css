@@ -1,0 +1,90 @@
+/*
+ * Design tokens. Everything visual hangs off these.
+ * Light = drawing paper + graphite ink. Dark = graphite + paper ink.
+ * One accent: international orange. Use it sparingly — labels, dimension lines, one hover.
+ */
+:root {
+  color-scheme: light dark;
+
+  /* palette */
+  --paper: #ecebe5;
+  --paper-2: #e2e1d9;
+  --graphite: #121314;
+  --graphite-2: #1b1c1e;
+  --orange: #ff4f00;
+  --orange-ink: #b83500; /* orange that passes contrast as text on paper */
+
+  /* semantic (light) */
+  --bg: var(--paper);
+  --bg-raised: var(--paper-2);
+  --ink: var(--graphite);
+  --ink-2: #4a4b4d; /* secondary text, ≥ 7:1 on paper */
+  --ink-3: #5f6062; /* tertiary/meta, ≥ 4.5:1 on paper */
+  --line: rgb(18 19 20 / 0.16);
+  --line-strong: rgb(18 19 20 / 0.42);
+  --grid: rgb(18 19 20 / 0.045);
+  --accent: var(--orange);
+  --accent-text: var(--orange-ink);
+  --selection: rgb(255 79 0 / 0.22);
+
+  /* type */
+  /* --font-display / --font-mono come from Astro's <Font> (with metric-matched fallbacks) */
+  --step--2: clamp(0.69rem, 0.67rem + 0.08vw, 0.75rem); /* mono labels */
+  --step--1: clamp(0.8rem, 0.77rem + 0.13vw, 0.875rem);
+  --step-0: clamp(1rem, 0.96rem + 0.2vw, 1.125rem);
+  --step-1: clamp(1.25rem, 1.15rem + 0.45vw, 1.5rem);
+  --step-2: clamp(1.6rem, 1.4rem + 0.9vw, 2.2rem);
+  --step-3: clamp(2.2rem, 1.8rem + 2vw, 3.6rem);
+  --step-4: clamp(3rem, 2.2rem + 4vw, 6.5rem);
+  --step-5: clamp(3.4rem, 2rem + 7.2vw, 10.5rem);
+
+  /* space */
+  --gutter: clamp(16px, 3.2vw, 48px);
+  --frame: clamp(10px, 1.4vw, 22px); /* the drawing border inset */
+  --space-xs: 0.5rem;
+  --space-s: 1rem;
+  --space-m: 1.5rem;
+  --space-l: clamp(2.5rem, 2rem + 2vw, 4rem);
+  --space-xl: clamp(4rem, 3rem + 5vw, 9rem);
+  --max: 1440px;
+
+  /* motion — curves from the animation guidelines, never hand-rolled */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --dur-press: 140ms;
+  --dur-hover: 180ms;
+  --dur-ui: 240ms;
+
+  --radius: 2px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg: var(--graphite);
+    --bg-raised: var(--graphite-2);
+    --ink: #ecebe5;
+    --ink-2: #b9b8b2;
+    --ink-3: #8f8e89;
+    --line: rgb(236 235 229 / 0.14);
+    --line-strong: rgb(236 235 229 / 0.4);
+    --grid: rgb(236 235 229 / 0.035);
+    --accent-text: var(--orange);
+  }
+}
+
+:root[data-theme='dark'] {
+  --bg: var(--graphite);
+  --bg-raised: var(--graphite-2);
+  --ink: #ecebe5;
+  --ink-2: #b9b8b2;
+  --ink-3: #8f8e89;
+  --line: rgb(236 235 229 / 0.14);
+  --line-strong: rgb(236 235 229 / 0.4);
+  --grid: rgb(236 235 229 / 0.035);
+  --accent-text: var(--orange);
+  color-scheme: dark;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+}

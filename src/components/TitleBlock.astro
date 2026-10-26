@@ -1,0 +1,118 @@
+---
+// The title block in the corner of every drawing. Here it doubles as a
+// "you are here": the sheet number/title update as sections scroll past.
+import { person, sheets } from '../data/site';
+
+interface Props {
+  sheet: { no: string; title: string };
+}
+const { sheet } = Astro.props;
+---
+
+<aside class="tb" aria-label="Drawing info">
+  <dl class="tb__grid mono">
+    <div class="tb__cell tb__cell--wide">
+      <dt>Title</dt>
+      <dd data-tb-title>{sheet.title}</dd>
+    </div>
+    <div class="tb__cell">
+      <dt>Sheet</dt>
+      <dd><span data-tb-no>{sheet.no}</span> / {String(sheets.length).padStart(2, '0')}</dd>
+    </div>
+    <div class="tb__cell">
+      <dt>Drawn</dt>
+      <dd>O.H. Erdogan</dd>
+    </div>
+    <div class="tb__cell">
+      <dt>Rev</dt>
+      <dd>{person.age}</dd>
+    </div>
+    <div class="tb__cell tb__cell--wide">
+      <dt>Location</dt>
+      <dd>{person.coords} · <time data-clock>--:--</time></dd>
+    </div>
+  </dl>
+</aside>
+
+<style>
+  .tb {
+    position: fixed;
+    right: var(--frame);
+    bottom: var(--frame);
+    z-index: 41;
+    background: var(--bg);
+    border-top: 1px solid var(--line-strong);
+    border-left: 1px solid var(--line-strong);
+    pointer-events: none;
+  }
+  .tb__grid {
+    display: grid;
+    grid-template-columns: repeat(3, auto);
+    font-size: 9.5px;
+  }
+  .tb__cell {
+    padding: 0.35rem 0.6rem 0.4rem;
+    border-right: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    min-width: 0;
+  }
+  .tb__cell:nth-child(3),
+  .tb__cell:last-child {
+    border-right: 0;
+  }
+  .tb__cell:nth-child(n + 4) {
+    border-bottom: 0;
+  }
+  .tb__cell--wide {
+    grid-column: span 2;
+  }
+  .tb__cell:last-child {
+    grid-column: span 2;
+  }
+  dt {
+    color: var(--ink-3);
+    font-size: 8px;
+  }
+  dd {
+    white-space: nowrap;
+    color: var(--ink);
+  }
+  [data-tb-title] {
+    display: inline-block;
+    min-width: 16ch;
+  }
+
+  /* phones: just a tiny sheet tag, the full block would eat the screen */
+  @media (max-width: 720px) {
+    .tb {
+      border: 1px solid var(--line-strong);
+      border-right: 0;
+      border-bottom: 0;
+    }
+    .tb__grid {
+      display: flex;
+    }
+    .tb__cell {
+      display: none;
+      border: 0;
+    }
+    .tb__cell:nth-child(1),
+    .tb__cell:nth-child(2) {
+      display: block;
+    }
+    .tb__cell:nth-child(1) {
+      order: 2;
+    }
+    [data-tb-title] {
+      min-width: 0;
+    }
+    dt {
+      display: none;
+    }
+  }
+  @media print {
+    .tb {
+      display: none;
+    }
+  }
+</style>

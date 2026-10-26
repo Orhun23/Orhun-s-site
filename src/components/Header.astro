@@ -1,0 +1,86 @@
+---
+import { nav, person } from '../data/site';
+import ThemeToggle from './ThemeToggle.astro';
+
+const path = Astro.url.pathname;
+---
+
+<header class="header">
+  <a class="brand press" href="/" aria-label={`${person.name}, home`}>
+    <span class="brand__mark">{person.initials}</span>
+    <span class="brand__name mono">{person.name}</span>
+  </a>
+  <nav aria-label="Main">
+    <ul role="list" class="nav">
+      {
+        nav.map((item) => (
+          <li>
+            <a
+              class="mono link-draw"
+              href={item.href}
+              aria-current={item.href === path ? 'page' : undefined}
+            >
+              {item.label}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </nav>
+  <ThemeToggle />
+</header>
+
+<style>
+  .header {
+    position: fixed;
+    top: var(--frame);
+    left: var(--frame);
+    right: var(--frame);
+    z-index: 45;
+    display: flex;
+    align-items: center;
+    gap: clamp(0.75rem, 2vw, 2rem);
+    padding: 0.7rem clamp(0.75rem, 1.6vw, 1.25rem);
+    border-bottom: 1px solid var(--line);
+    background: color-mix(in srgb, var(--bg) 82%, transparent);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  .brand {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    text-decoration: none;
+    margin-right: auto;
+  }
+  .brand__mark {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 1.05rem;
+    letter-spacing: -0.02em;
+  }
+  .brand__name {
+    color: var(--ink-3);
+  }
+  .nav {
+    display: flex;
+    gap: clamp(0.85rem, 2vw, 2rem);
+  }
+  .nav a {
+    display: inline-block;
+    padding-block: 0.35rem;
+  }
+  .nav a[aria-current='page'] {
+    color: var(--accent-text);
+  }
+  @media (max-width: 860px) {
+    .brand__name {
+      display: none;
+    }
+  }
+  @media (max-width: 380px) {
+    .nav {
+      gap: 0.7rem;
+    }
+  }
+</style>
