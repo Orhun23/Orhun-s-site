@@ -6,9 +6,10 @@ const path = Astro.url.pathname;
 ---
 
 <header class="header">
-  <a class="brand press" href="/" aria-label={`${person.name}, home`}>
+  <a class="brand press" href="/">
     <span class="brand__mark">{person.initials}</span>
     <span class="brand__name mono">{person.name}</span>
+    <span class="visually-hidden">, home</span>
   </a>
   <nav aria-label="Main">
     <ul role="list" class="nav">
@@ -72,9 +73,15 @@ const path = Astro.url.pathname;
   .nav a[aria-current='page'] {
     color: var(--accent-text);
   }
+  /* small screens: name stays in the accessible name, just not on screen */
   @media (max-width: 860px) {
     .brand__name {
-      display: none;
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
     }
   }
   @media (max-width: 520px) {
