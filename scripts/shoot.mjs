@@ -49,6 +49,7 @@ for (const w of widths) {
     let n = 0;
     for (let y = from; y < h; y += vh) {
       await page.evaluate((y) => {
+        // @ts-ignore set by the site at runtime
         const l = window.__lenis;
         if (l) l.scrollTo(y, { immediate: true });
         else window.scrollTo(0, y);
@@ -61,6 +62,7 @@ for (const w of widths) {
       await page.evaluate((f) => {
         const h = document.documentElement.scrollHeight - innerHeight;
         const y = f > 1 ? f : h * f;
+        // @ts-ignore set by the site at runtime
         const l = window.__lenis;
         if (l) l.scrollTo(y, { immediate: true });
         else window.scrollTo(0, y);

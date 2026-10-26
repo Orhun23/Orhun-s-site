@@ -42,9 +42,8 @@ const path = Astro.url.pathname;
     gap: clamp(0.75rem, 2vw, 2rem);
     padding: 0.7rem clamp(0.75rem, 1.6vw, 1.25rem);
     border-bottom: 1px solid var(--line);
-    background: color-mix(in srgb, var(--bg) 82%, transparent);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    /* no backdrop blur: it repaints on every scroll frame and costs real time on phones */
+    background: color-mix(in srgb, var(--bg) 94%, transparent);
   }
   .brand {
     display: flex;
@@ -78,9 +77,25 @@ const path = Astro.url.pathname;
       display: none;
     }
   }
-  @media (max-width: 380px) {
+  @media (max-width: 520px) {
+    .header {
+      gap: 0.6rem;
+      padding-inline: 0.6rem;
+    }
     .nav {
       gap: 0.7rem;
+    }
+    .nav a {
+      font-size: 10px;
+      letter-spacing: 0;
+    }
+  }
+  @media (max-width: 360px) {
+    .nav {
+      gap: 0.5rem;
+    }
+    .nav a {
+      font-size: 9.5px;
     }
   }
 </style>

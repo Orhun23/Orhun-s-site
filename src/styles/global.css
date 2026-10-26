@@ -28,9 +28,8 @@ body {
   min-height: 100svh;
   background: var(--bg);
   color: var(--ink);
-  font-family: var(--font-display);
+  font-family: var(--font-text);
   font-size: var(--step-0);
-  font-optical-sizing: auto;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -73,6 +72,7 @@ h1,
 h2,
 h3,
 h4 {
+  font-family: var(--font-display);
   text-wrap: balance;
   font-weight: 700;
   line-height: 1;
@@ -132,6 +132,12 @@ body::before {
   background-position: -1px -1px;
 }
 
+/* ---------- below-the-fold sheets: skip style/layout/paint until they're near ---------- */
+main > section:not(:first-child) {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 1400px;
+}
+
 /* ---------- layout helpers ---------- */
 .wrap {
   width: 100%;
@@ -183,6 +189,16 @@ body::before {
 }
 .sheet-head > :last-child {
   margin-left: auto;
+}
+@media (max-width: 560px) {
+  .sheet-head {
+    flex-wrap: wrap;
+    gap: 0.25rem 0.75rem;
+  }
+  .sheet-head > :last-child {
+    flex-basis: 100%;
+    margin-left: 0;
+  }
 }
 
 /* ---------- pressables ---------- */

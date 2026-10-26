@@ -21,7 +21,7 @@ const p = await getImage({ src: poster, width: Math.min(poster.width, 900), form
 
 <figure class:list={['plate', cls]} data-plate>
   <div class="plate__frame" style={`aspect-ratio:${ratio}`} data-reveal="wipe">
-    <video muted playsinline loop preload="none" poster={p.src} data-autoplay aria-label={alt}>
+    <video muted playsinline loop preload="none" data-poster={p.src} data-autoplay aria-label={alt}>
       <source src={src} type="video/mp4" />
     </video>
     <button class="plate-btn press" type="button" data-play aria-label="Play video" aria-pressed="false">

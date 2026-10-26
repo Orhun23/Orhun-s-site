@@ -1,20 +1,9 @@
-// Site-wide behaviour: smooth scroll, reveals, title block, clock, videos, magnetic buttons, copy email.
-import Lenis from 'lenis';
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { reducedMotion, finePointer } from './env';
+// Site-wide behaviour. Everything cheap runs right away; smooth scroll, GSAP and the
+// magnetic buttons load at idle so they never sit between the user and the first paint.
+import { reducedMotion } from './env';
 
-gsap.registerPlugin(ScrollTrigger);
-
-/* ---------- smooth scroll (off for reduced motion: native scroll is the respectful default) ---------- */
-let lenis: Lenis | null = null;
-if (!reducedMotion()) {
-  lenis = new Lenis({ lerp: 0.12, wheelMultiplier: 1, anchors: { offset: -64 } });
-  lenis.on('scroll', ScrollTrigger.update);
-  gsap.ticker.add((t) => lenis?.raf(t * 1000));
-  gsap.ticker.lagSmoothing(0);
-}
-(window as any).__lenis = lenis;
+const idle = (fn: () => void) =>
+  'requestIdleCallback' in window ? requestIdleCallback(fn, { timeout: 1500 }) : setTimeout(fn, 200);
 
 /* ---------- reveals ---------- */
 const revealIO = new IntersectionObserver(
@@ -79,7 +68,9 @@ const videoIO = new IntersectionObserver(
   (entries) => {
     for (const e of entries) {
       const v = e.target as HTMLVideoElement;
-      if (e.isIntersecting && !reducedMotion() && !userPaused.has(v)) {
+      // the hero plate is on screen from the start but hidden until it wipes in; Hero.astro starts it
+      const parked = !!v.closest('[data-hero-plate]:not([data-shown])');
+      if (e.isIntersecting && !parked && !reducedMotion() && !userPaused.has(v)) {
         if (v.preload === 'none') v.preload = 'auto';
         v.play().catch(() => {});
       } else if (!e.isIntersecting) {
@@ -89,6 +80,22 @@ const videoIO = new IntersectionObserver(
   },
   { threshold: 0.25 },
 );
+// posters are big-ish images; only fetch them when the video gets near the viewport
+const posterIO = new IntersectionObserver(
+  (entries) => {
+    for (const e of entries) {
+      if (!e.isIntersecting) continue;
+      const v = e.target as HTMLVideoElement;
+      if (v.dataset.poster) v.poster = v.dataset.poster;
+      posterIO.unobserve(v);
+    }
+  },
+  { rootMargin: '800px 0px' },
+);
+document
+  .querySelectorAll<HTMLVideoElement>('video[data-poster]')
+  .forEach((v) => !v.closest('[data-hero-plate]') && posterIO.observe(v));
+
 videos.forEach((v) => {
   videoIO.observe(v);
   v.addEventListener('play', () => setBtn(v));
@@ -97,30 +104,15 @@ videos.forEach((v) => {
   btn?.addEventListener('click', () => {
     if (v.paused) {
       userPaused.delete(v);
+      delete v.dataset.userPaused;
       v.play().catch(() => {});
     } else {
       userPaused.add(v);
+      v.dataset.userPaused = '1';
       v.pause();
     }
   });
 });
-
-/* ---------- magnetic buttons: short pull, springs back ---------- */
-if (finePointer() && !reducedMotion()) {
-  document.querySelectorAll<HTMLElement>('[data-magnetic]').forEach((el) => {
-    const strength = Number(el.dataset.magnetic) || 0.25;
-    const xTo = gsap.quickTo(el, 'x', { duration: 0.5, ease: 'power3.out' });
-    const yTo = gsap.quickTo(el, 'y', { duration: 0.5, ease: 'power3.out' });
-    el.addEventListener('pointermove', (e) => {
-      const r = el.getBoundingClientRect();
-      xTo((e.clientX - (r.left + r.width / 2)) * strength);
-      yTo((e.clientY - (r.top + r.height / 2)) * strength);
-    });
-    el.addEventListener('pointerleave', () => {
-      gsap.to(el, { x: 0, y: 0, duration: 0.7, ease: 'elastic.out(1, 0.45)' });
-    });
-  });
-}
 
 /* ---------- copy email ---------- */
 document.querySelectorAll<HTMLButtonElement>('[data-copy]').forEach((btn) => {
@@ -139,5 +131,4 @@ document.querySelectorAll<HTMLButtonElement>('[data-copy]').forEach((btn) => {
   });
 });
 
-/* refresh trigger positions once images/fonts have settled */
-window.addEventListener('load', () => ScrollTrigger.refresh());
+idle(() => import('./motion').then((m) => m.start()));

@@ -67,7 +67,9 @@ const {
             class:list={['co', `co--${c.dir ?? 'right'}`]}
             style={`left:${c.at[0]}%;top:${c.at[1]}%;--i:${i + dims.length}`}
           >
-            <span class="co__dot" />
+            <span class="co__dot">
+              <span class="co__no mono">{i + 1}</span>
+            </span>
             <span class="co__line" />
             <span class="co__label mono">{c.label}</span>
           </div>
@@ -75,6 +77,15 @@ const {
       }
     </div>
   </div>
+  {
+    callouts.length > 0 && (
+      <ol class="ann__legend mono" aria-hidden="true">
+        {callouts.map((c) => (
+          <li>{c.label}</li>
+        ))}
+      </ol>
+    )
+  }
   {
     (fig || caption) && (
       <figcaption class="ann__cap mono">
@@ -267,10 +278,45 @@ const {
     transform: none;
   }
 
+  .co__no,
+  .ann__legend {
+    display: none;
+  }
+
+  /* phones: labels would run off the screen, so switch to the drawing convention —
+     numbered balloons on the photo, a parts list underneath */
   @media (max-width: 560px) {
-    .co__label,
     .dim__label {
       font-size: 9px;
+    }
+    .co__line,
+    .co__label {
+      display: none;
+    }
+    .co__dot {
+      left: -9px;
+      top: -9px;
+      width: 18px;
+      height: 18px;
+      display: grid;
+      place-items: center;
+      box-shadow: 0 0 0 2px var(--bg);
+    }
+    .co__no {
+      display: block;
+      font-size: 9.5px;
+      line-height: 1;
+      color: #fff;
+    }
+    .ann__legend {
+      display: grid;
+      gap: 0.15rem;
+      margin: 0.6rem 0 0;
+      padding-left: 1.4em;
+      font-size: 10px;
+    }
+    .ann__legend li::marker {
+      color: var(--accent-text);
     }
   }
   @media (prefers-reduced-motion: reduce) {

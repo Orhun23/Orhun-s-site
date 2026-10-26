@@ -23,7 +23,7 @@ const [line1, line2] = site.heroLine;
         playsinline
         loop
         preload="none"
-        poster={poster.src}
+        data-poster={poster.src}
         width="720"
         height="1280"
         data-autoplay
@@ -58,11 +58,7 @@ const [line1, line2] = site.heroLine;
 </section>
 
 <script>
-  import { gsap } from 'gsap';
-  import { ScrollTrigger } from 'gsap/ScrollTrigger';
   import { reducedMotion, finePointer, cssVar } from '../scripts/env';
-
-  gsap.registerPlugin(ScrollTrigger);
 
   const section = document.querySelector<HTMLElement>('[data-hero]')!;
   const canvasBox = section.querySelector<HTMLElement>('[data-hero-canvas]')!;
@@ -74,28 +70,41 @@ const [line1, line2] = site.heroLine;
   const reduced = reducedMotion();
   const small = () => window.matchMedia('(max-width: 760px)').matches;
 
-  const webgl = (() => {
-    try {
-      const c = document.createElement('canvas');
-      return !!(c.getContext('webgl2') || c.getContext('webgl'));
-    } catch {
-      return false;
-    }
-  })();
 
   // skate plate + line 2: driven by scroll (or shown outright for reduced motion)
+  const video = plate.querySelector('video')!;
+  // the plate is hidden until the end of the scroll story, so its poster can wait too
+  const loadPoster = () => {
+    if (!video.poster && video.dataset.poster) video.poster = video.dataset.poster;
+  };
   const reveal = (r: number) => {
     plate.style.setProperty('--r', String(r));
     line2.style.setProperty('--r', String(r));
-    plate.toggleAttribute('data-shown', r > 0.02);
+    const show = r > 0.02;
+    if (show === plate.hasAttribute('data-shown')) return;
+    plate.toggleAttribute('data-shown', show);
+    if (show) loadPoster();
+    // only decode video once it's actually visible
+    if (show && !reduced && !video.dataset.userPaused) {
+      video.preload = 'auto';
+      video.play().catch(() => {});
+    } else if (!show) {
+      video.pause();
+    }
   };
 
   async function boot() {
-    if (!webgl) {
+    if (!document.createElement('canvas').getContext) {
       section.classList.add('hero--static');
       return;
     }
-    const { createHero } = await import('../scripts/hero/tallbike');
+    // everything heavy is fetched here, after first paint
+    const [{ createHero }, { gsap }, { ScrollTrigger }] = await Promise.all([
+      import('../scripts/hero/tallbike'),
+      import('gsap'),
+      import('gsap/ScrollTrigger'),
+    ]);
+    gsap.registerPlugin(ScrollTrigger);
     const hero = createHero({
       container: canvasBox,
       overlay,
@@ -125,6 +134,7 @@ const [line1, line2] = site.heroLine;
       end: 'bottom bottom',
       onUpdate: (st) => {
         const p = st.progress;
+        if (p > 0.4) loadPoster();
         hero.setProgress(p / 0.78);
         const r = gsap.utils.clamp(0, 1, (p - 0.8) / 0.17);
         hero.setShift(r);
