@@ -306,6 +306,14 @@ export type HeroOptions = {
   accent: string;
   reduced: boolean;
   small: boolean;
+  /** tip the bike over around its own long axis, radians (the 404 page) */
+  lie?: number;
+  /** camera pitch override, radians */
+  pitch?: number;
+  /** where the drawing sits, as fractions of the half-width/half-height */
+  anchor?: [number, number];
+  /** draw ground, dimensions and part labels (default true) */
+  furniture?: boolean;
 };
 
 export type HeroScene = {
@@ -331,7 +339,8 @@ type Part = PartDef & {
 };
 
 export function createHero(opts: HeroOptions): HeroScene {
-  const { container, overlay, reduced } = opts;
+  const { container, overlay, reduced, lie = 0, pitch, anchor, furniture = true } = opts;
+  const lieM = euler(lie, 0, 0);
   let small = opts.small;
   let ink = opts.ink;
   let accent = opts.accent;
@@ -406,11 +415,9 @@ export function createHero(opts: HeroOptions): HeroScene {
 
   /** model-space point → screen px */
   const project = (v: V3): [number, number] => {
-    const w = mul(rigM, [
-      (v[0] - BIKE_CENTRE[0]) * rigScale,
-      (v[1] - BIKE_CENTRE[1]) * rigScale,
-      (v[2] - BIKE_CENTRE[2]) * rigScale,
-    ]);
+    let m: V3 = [(v[0] - BIKE_CENTRE[0]) * rigScale, (v[1] - BIKE_CENTRE[1]) * rigScale, (v[2] - BIKE_CENTRE[2]) * rigScale];
+    if (lie) m = mul(lieM, m);
+    const w = mul(rigM, m);
     const x = w[0] + rigPos[0];
     const y = w[1] + rigPos[1];
     return [((x + halfW) / (2 * halfW)) * width, ((halfH - y) / (2 * halfH)) * height];
@@ -461,9 +468,11 @@ export function createHero(opts: HeroOptions): HeroScene {
     // the headline is a banner along the bottom, so the drawing lives in the upper part of the sheet
     const anchorX = small ? 0 : halfW * 0.08;
     const anchorY = halfH * (small ? 0.26 : 0.29) - (1 - easeInOut(a)) * halfH * (small ? 0.05 : 0.17);
-    rigPos = [anchorX - shift * halfW * (small ? 0 : 0.3), anchorY + shift * (small ? halfH * 0.1 : 0), 0];
+    rigPos = anchor
+      ? [anchor[0] * halfW, anchor[1] * halfH, 0]
+      : [anchorX - shift * halfW * (small ? 0 : aspect < 1 ? 0.5 : 0.3), anchorY + shift * (small ? halfH * 0.1 : 0), 0];
     rigScale = 1 - shift * (small ? 0.25 : 0.12);
-    rigM = euler(BASE_ROT_X + tilt.x, BASE_ROT_Y + tilt.y + dragAngle, 0);
+    rigM = euler((pitch ?? BASE_ROT_X) + tilt.x, BASE_ROT_Y + tilt.y + dragAngle, 0);
 
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, width, height);
@@ -471,8 +480,10 @@ export function createHero(opts: HeroOptions): HeroScene {
     ctx.lineCap = 'round';
 
     // ground + dimensions live in model space
-    strokeSegs(groundSegs, Math.floor(groundSegs.length * clamp01(intro * 1.4)), identity, ink, 0.35 * (1 - shift * 0.6));
-    strokeSegs(dimSegs, Math.floor(dimSegs.length * d), identity, accent, 1 - shift * 0.5);
+    if (furniture) {
+      strokeSegs(groundSegs, Math.floor(groundSegs.length * clamp01(intro * 1.4)), identity, ink, 0.35 * (1 - shift * 0.6));
+      strokeSegs(dimSegs, Math.floor(dimSegs.length * d), identity, accent, 1 - shift * 0.5);
+    }
 
     // parts: each moves home inside its own window of the timeline
     for (const part of built) {
@@ -497,7 +508,7 @@ export function createHero(opts: HeroOptions): HeroScene {
     }
     ctx.globalAlpha = 1;
 
-    placeLabels(d);
+    if (furniture) placeLabels(d);
   }
 
   function placeLabels(d: number) {

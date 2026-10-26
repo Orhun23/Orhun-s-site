@@ -3,27 +3,30 @@ import Base from '../layouts/Base.astro';
 ---
 
 <Base title="Sheet not found" sheet={{ no: '404', title: 'Missing sheet' }} noindex>
+  <script>
+    import { createHero } from '../scripts/hero/tallbike';
+    import { cssVar } from '../scripts/env';
+    const box = document.querySelector<HTMLElement>('[data-nf-canvas]');
+    if (box) {
+      const hero = createHero({ container: box, overlay: document.createElement('div'), ink: cssVar('--ink'), accent: '#ff4f00', reduced: true, small: false, lie: -1.45, pitch: 0.42, anchor: [-0.1, -0.62], furniture: false });
+      new ResizeObserver(() => hero.resize()).observe(box);
+      window.addEventListener('themechange', () => hero.setColors(cssVar('--ink'), '#ff4f00'));
+    }
+  </script>
   <section class="nf wrap">
     <p class="mono"><span class="accent">Error 404</span> <span class="mono-meta">· Sheet not in drawing set</span></p>
     <h1 class="nf__title display">Sheet not found.</h1>
     <p class="nf__lede">Probably fell off the tallbike. It happens.</p>
 
-    <svg class="nf__fig" viewBox="0 0 420 160" role="img" aria-label="Line drawing of a tallbike lying on its side next to a dimension line reading 'distance fallen: approx. 2 m'">
-      <g fill="none" stroke="currentColor" stroke-width="1.25">
-        <!-- ground + hatch -->
-        <path d="M10 140h400" />
-        <path d="M20 140l-8 8M40 140l-8 8M60 140l-8 8M80 140l-8 8M100 140l-8 8M120 140l-8 8M140 140l-8 8M160 140l-8 8M180 140l-8 8M200 140l-8 8M220 140l-8 8M240 140l-8 8M260 140l-8 8M280 140l-8 8M300 140l-8 8M320 140l-8 8M340 140l-8 8M360 140l-8 8M380 140l-8 8M400 140l-8 8" opacity=".4" />
-        <!-- the bike, on its side -->
-        <circle cx="80" cy="112" r="28" />
-        <circle cx="80" cy="112" r="3" />
-        <circle cx="168" cy="118" r="22" transform="rotate(-8 168 118)" />
-        <path d="M80 112l46-30 40 4-22 32zM126 82l-10-32M166 86l6-38M116 50l56-2M80 112l36-62M144 118l52-74M172 48l26-6M196 44l14 2M116 50l-6-12h22" />
-      </g>
-      <g stroke="#ff4f00" stroke-width="1.25" fill="none">
-        <path d="M300 30v108M294 36l12-12M294 144l12-12M290 30h20M290 138h20" />
-      </g>
-      <text x="318" y="88" fill="#ff4f00" font-family="var(--font-mono)" font-size="10">≈ 2 m, fallen</text>
-    </svg>
+    <figure class="nf__fig" role="img" aria-label="Line drawing of the tallbike lying on its side, with a dimension line: approximately 2 metres, fallen">
+      <div class="nf__canvas" data-nf-canvas></div>
+      <svg class="nf__furniture" viewBox="0 0 560 220" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M0 196h560" stroke="currentColor" stroke-width="1" opacity=".5" />
+        <path d="M10 196l-8 8M40 196l-8 8M70 196l-8 8M100 196l-8 8M130 196l-8 8M160 196l-8 8M190 196l-8 8M220 196l-8 8M250 196l-8 8M280 196l-8 8M310 196l-8 8M340 196l-8 8M370 196l-8 8M400 196l-8 8M430 196l-8 8M460 196l-8 8M490 196l-8 8M520 196l-8 8M550 196l-8 8" stroke="currentColor" stroke-width="1" opacity=".3" />
+        <path d="M520 30v166M514 36l12-12M514 202l12-12M508 30h24" stroke="#ff4f00" stroke-width="1.25" fill="none" />
+      </svg>
+      <figcaption class="nf__dim mono accent">≈ 2 m, fallen</figcaption>
+    </figure>
 
     <div class="nf__ctas">
       <a class="btn" href="/" data-magnetic="0.2">Back to sheet 01</a>
@@ -48,9 +51,28 @@ import Base from '../layouts/Base.astro';
     color: var(--ink-2);
   }
   .nf__fig {
+    position: relative;
     width: min(100%, 560px);
+    aspect-ratio: 560 / 220;
     margin-block: var(--space-l);
     color: var(--ink);
+  }
+  .nf__canvas {
+    position: absolute;
+    inset: -30% 6% 0 -6%;
+  }
+  .nf__furniture {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .nf__dim {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translate(10%, -50%) rotate(-90deg);
+    font-size: 10px;
   }
   .nf__ctas {
     display: flex;

@@ -68,17 +68,18 @@ const d = build.data;
         </aside>
       </div>
 
-      <div class="bd__prose prose">
-        <Content />
+      <div class:list={['bd__body', d.video && 'bd__body--video']}>
+        <div class="bd__prose prose">
+          <Content />
+        </div>
+        {
+          d.video && (
+            <div class="bd__video">
+              <Plate src={d.video.src} poster={d.video.poster} alt={d.video.alt} caption={d.video.caption} />
+            </div>
+          )
+        }
       </div>
-
-      {
-        d.video && (
-          <div class="bd__video">
-            <Plate src={d.video.src} poster={d.video.poster} alt={d.video.alt} caption={d.video.caption} />
-          </div>
-        )
-      }
 
       {
         d.gallery.length > 0 && (
@@ -135,7 +136,7 @@ const d = build.data;
     grid-template-columns: minmax(0, 7fr) minmax(0, 4fr);
     gap: var(--space-l) clamp(2rem, 5vw, 6rem);
     align-items: start;
-    margin-top: var(--space-xl);
+    margin-top: var(--space-l);
   }
   .bd__main--text {
     grid-template-columns: minmax(0, 1fr);
@@ -168,13 +169,22 @@ const d = build.data;
     text-transform: none;
     letter-spacing: 0;
   }
-  .bd__prose {
+  .bd__body {
     margin-top: var(--space-xl);
+  }
+  .bd__body--video {
+    display: grid;
+    grid-template-columns: minmax(0, 40rem) minmax(0, 340px);
+    justify-content: space-between;
+    gap: var(--space-l);
+    align-items: start;
+  }
+  .bd__prose {
     max-width: 40rem;
   }
   .bd__video {
-    margin-top: var(--space-xl);
-    width: min(100%, 380px);
+    position: sticky;
+    top: 6rem;
   }
   .bd__gallery {
     display: grid;
@@ -250,8 +260,15 @@ const d = build.data;
     .bd__gallery :global(.is-wide) {
       grid-column: auto;
     }
-    .bd__spec {
+    .bd__spec,
+    .bd__video {
       position: static;
+    }
+    .bd__body--video {
+      grid-template-columns: 1fr;
+    }
+    .bd__video {
+      width: min(100%, 360px);
     }
     .bd__cover :global(img) {
       max-height: none;

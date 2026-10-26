@@ -124,7 +124,9 @@ const [line1, line2] = site.heroLine;
     new IntersectionObserver(([e]) => hero.setActive(e.isIntersecting)).observe(section);
 
     if (reduced) {
+      // straight to the end state of the scroll story: drawing aside, clip shown (desktop only)
       view.textContent = 'assembled view';
+      if (!small()) hero.setShift(1);
       return;
     }
 
@@ -279,7 +281,7 @@ const [line1, line2] = site.heroLine;
     right: calc(var(--frame) + var(--gutter));
     top: calc(var(--frame) + 7rem);
     /* stays above the headline banner */
-    height: max(240px, calc(100svh - var(--frame) * 2 - 7rem - 6.35vw * 2 - 9rem));
+    height: max(240px, min(calc(100svh - var(--frame) * 2 - 7rem - 6.35vw * 2 - 9rem), 32vw * 16 / 9));
     aspect-ratio: 9 / 16;
     clip-path: inset(calc((1 - var(--r)) * 100%) 0 0 0);
     visibility: hidden;
@@ -380,6 +382,12 @@ const [line1, line2] = site.heroLine;
   @media (prefers-reduced-motion: reduce) {
     :global(.js) .hero {
       height: auto;
+    }
+    /* phones have no room for drawing + clip side by side without the scroll story */
+    @media (max-width: 760px) {
+      .hero__plate {
+        display: none;
+      }
     }
     .hero__cue {
       display: none;

@@ -36,7 +36,7 @@ const {
 ---
 
 <figure class:list={['ann', cls]} data-draw>
-  <div class="ann__frame" data-reveal="wipe">
+  <div class="ann__frame" data-reveal={eager ? undefined : 'wipe'}>
     <Picture
       src={src}
       alt={alt}

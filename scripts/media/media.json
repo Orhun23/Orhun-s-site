@@ -73,5 +73,5 @@
   {"src": "work photos/teampi/20221005_102329.jpg", "out": "work/teampi-architecture"},
   {"src": "work photos/teampi/IMG_5915.jpeg", "out": "work/teampi-wiring"},
   {"src": "work photos/teampi/20230223_172220.jpg", "out": "work/teampi-chassis"},
-  {"src": "work photos/teampi/IMG_5928.PNG", "out": "work/teampi-stage", "crop": [0, 0, 1, 0.7]}
+  {"src": "work photos/teampi/IMG_5928.PNG", "out": "work/teampi-stage", "crop": [0, 0.04, 1, 0.6]}
 ]
