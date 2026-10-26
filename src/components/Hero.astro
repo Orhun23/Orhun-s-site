@@ -1,408 +1,350 @@
 ---
-import { getImage } from 'astro:assets';
 import { site, person } from '../data/site';
-import skatePoster from '../assets/media/hero/skate-trocadero.jpg';
+import { STOPS } from '../scripts/hero/machine';
 
-const poster = await getImage({ src: skatePoster, width: 720, format: 'webp' });
 const [line1, line2] = site.heroLine;
+
+// Callouts sit in the machine's 1600×640 design space; the engine moves them with the drawing.
+type Label = {
+  stage: string;
+  at: [number, number];
+  code: string;
+  text: string;
+  sub?: string;
+  anchor?: 'left' | 'right';
+  code2?: string;
+};
+const labels: Label[] = [
+  { stage: 's1', at: [164, 52], code: 'S-01', text: 'Hopper', sub: 'Input: one ball' },
+  { stage: 's2', at: [222, 268], code: 'S-02', text: 'Alps run', sub: '47.33°N 12.36°E' },
+  { stage: 's2b', at: [262, 168], code: 'Strobe', text: 'Backflip, every 2nd frame @ 1/12 s', sub: 'Airtime ≈ 0.7 s · rot 360°' },
+  { stage: 's3', at: [560, 620], code: 'S-03', text: 'Skate pop', sub: 'Trocadéro rail, 48.86°N 2.29°E' },
+  { stage: 's4', at: [800, 252], code: 'S-04', text: 'Iron Man helmet, 360° servo', code2: 'while (!open) step();' },
+  { stage: 's5', at: [1010, 620], code: 'S-05', text: 'Tallbike wheel', sub: '2 donor frames, 1 wheel here' },
+  { stage: 's6', at: [1236, 620], code: 'S-06', text: 'Own 3D printer', sub: 'CoreXY · Klipper · prints a plane' },
+  { stage: 's7', at: [742, 96], code: 'S-07', text: 'Route', sub: '8 stops, 1 paper plane' },
+  { stage: 'home', at: [1548, 96], code: 'EIN', text: 'Home', sub: '51.44°N 5.47°E', anchor: 'right' },
+];
 ---
 
 <section id="top" class="hero" data-sheet="01" data-sheet-title="General arrangement" data-hero>
-  <div class="hero__stage">
-    <div class="hero__meta mono">
-      <span>Fig. 01 — Tallbike (B-01), <span data-hero-view>exploded view</span></span>
-      <span class="hero__meta-r mono-meta">Scale 1:20 · Dims in “normal bikes”</span>
-    </div>
-
-    <div class="hero__canvas" data-hero-canvas></div>
-    <div class="hero__overlay" data-hero-overlay aria-hidden="true"></div>
-
-    <figure class="hero__plate" data-hero-plate data-plate>
-      <video
-        muted
-        playsinline
-        loop
-        preload="none"
-        data-poster={poster.src}
-        width="720"
-        height="1280"
-        data-autoplay
-        aria-label="Orhun skating a flat rail at the Trocadéro in Paris, the Eiffel Tower behind him"
-      >
-        <source src="/media/hero/skate-trocadero.mp4" type="video/mp4" />
-      </video>
-      <noscript><img class="hero__still" src={poster.src} alt="Orhun skating at the Trocadéro in Paris, the Eiffel Tower behind him" /></noscript>
-      <button class="plate-btn press" type="button" data-play aria-label="Play video" aria-pressed="false">
-        <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path class="i-play" d="M4 2.5v11l9-5.5z" fill="currentColor"></path><path class="i-pause" d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"></path></svg>
-      </button>
-      <figcaption class="mono">
-        <span class="accent">Fig. 02</span> — Detail B: the other half<br />
-        <span class="mono-meta">Trocadéro, Paris · 48.86°N 2.29°E</span>
-      </figcaption>
-    </figure>
-
-    <div class="hero__copy">
-      <p class="hero__who mono">
-        <span>{person.name}</span>
-        <span class="mono-meta">— {person.role}, {person.base}</span>
-      </p>
-      <h1 class="hero__title display">
-        <span class="hero__line">{line1}</span>
-        <span class="hero__line hero__line--2" data-hero-line2>{line2}</span>
-      </h1>
-    </div>
-
-    <p class="hero__cue mono" data-hero-cue aria-hidden="true">
-      <span class="hero__cue-line"></span> Scroll to assemble
+  <div class="hero__meta">
+    <p class="mono">
+      <span class="accent">Fig. 01</span> — The machine <span class="mono-meta">· 7 stages · 1 ball · real footage</span>
     </p>
+    <div class="hero__controls">
+      <p class="hero__hint mono mono-meta">
+        <span class="hint-fine">Click the drawing to drop a ball</span><span class="hint-touch"
+          >Tap to drop a ball · drag to look around</span
+        >
+      </p>
+      <button class="btn hero__replay" type="button" data-replay data-magnetic="0.2">
+        <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"
+          ><path d="M13 8a5 5 0 1 1-1.6-3.7M13 2.5v3h-3" fill="none" stroke="currentColor" stroke-width="1.5"
+          ></path></svg
+        >
+        <span data-replay-label>Replay</span>
+      </button>
+    </div>
+  </div>
+
+  <figure class="hero__machine" data-machine>
+    <div class="hero__canvas" data-machine-canvas></div>
+    <div class="hero__labels" aria-hidden="true">
+      {
+        labels.map((l) => (
+          <div class:list={['mlabel', `mlabel--${l.anchor ?? 'left'}`]} data-at={l.at.join(',')} data-stage={l.stage}>
+            <span class="mlabel__box mono">
+              <span>
+                <span class="accent">{l.code}</span> {l.text}
+              </span>
+              {l.sub && <span class="mlabel__sub mono-meta">{l.sub}</span>}
+              {l.code2 && <code class="mlabel__code">{l.code2}</code>}
+            </span>
+          </div>
+        ))
+      }
+      {
+        STOPS.map((s, i) => (
+          <div class="mstop mono" data-at={`${s.x},28`} data-stop={i}>
+            <span>{s.code}</span>
+          </div>
+        ))
+      }
+    </div>
+    <figcaption class="visually-hidden">
+      A drawn chain-reaction machine. A ball drops from a hopper, rolls down an Alpine slope and off a snowboard kicker,
+      next to a strobe sequence of Orhun doing a backflip on a snowboard. It lands on a skateboard, which pops and hits a
+      button, next to a strobe of Orhun skating the Trocadéro rail in Paris. The button opens the faceplate of his Iron
+      Man helmet, which pulls a string that spins a tallbike wheel, whose chain drives his home-built 3D printer. The
+      printer prints a paper plane that flies a route through Praia, Marrakech, Paris, Istanbul, Delhi, Lombok and Tokyo,
+      and lands at Eindhoven.
+    </figcaption>
+    <noscript>
+      <img class="hero__static" src="/media/hero/machine-static.png" alt="" width="1600" height="640" />
+    </noscript>
+  </figure>
+
+  <div class="hero__copy">
+    <p class="hero__who mono">
+      <span>{person.name}</span>
+      <span class="mono-meta">— {person.role}, {person.base}</span>
+    </p>
+    <h1 class="hero__title display">
+      <span class="hero__line">{line1}</span>
+      <span class="hero__line hero__line--2" data-hero-line2>{line2}</span>
+    </h1>
   </div>
 </section>
 
 <script>
-  import { reducedMotion, finePointer, cssVar, swapText } from '../scripts/env';
+  import { reducedMotion, cssVar, swapText } from '../scripts/env';
 
   const section = document.querySelector<HTMLElement>('[data-hero]')!;
-  const canvasBox = section.querySelector<HTMLElement>('[data-hero-canvas]')!;
-  const overlay = section.querySelector<HTMLElement>('[data-hero-overlay]')!;
-  const plate = section.querySelector<HTMLElement>('[data-hero-plate]')!;
+  const box = section.querySelector<HTMLElement>('[data-machine-canvas]')!;
+  const machineEl = section.querySelector<HTMLElement>('[data-machine]')!;
+  const labels = [...section.querySelectorAll<HTMLElement>('.mlabel, .mstop')];
   const line2 = section.querySelector<HTMLElement>('[data-hero-line2]')!;
-  const cue = section.querySelector<HTMLElement>('[data-hero-cue]')!;
-  const view = section.querySelector<HTMLElement>('[data-hero-view]')!;
+  const replayBtn = section.querySelector<HTMLButtonElement>('[data-replay]')!;
+  const replayLabel = section.querySelector<HTMLElement>('[data-replay-label]')!;
   const reduced = reducedMotion();
-  const small = () => window.matchMedia('(max-width: 760px)').matches;
-
-
-  // skate plate + line 2: driven by scroll (or shown outright for reduced motion)
-  const video = plate.querySelector('video')!;
-  // the plate is hidden until the end of the scroll story, so its poster can wait too
-  const loadPoster = () => {
-    if (!video.poster && video.dataset.poster) video.poster = video.dataset.poster;
-  };
-  const reveal = (r: number) => {
-    plate.style.setProperty('--r', String(r));
-    line2.style.setProperty('--r', String(r));
-    const show = r > 0.02;
-    if (show === plate.hasAttribute('data-shown')) return;
-    plate.toggleAttribute('data-shown', show);
-    if (show) loadPoster();
-    // only decode video once it's actually visible
-    if (show && !reduced && !video.dataset.userPaused) {
-      video.preload = 'auto';
-      video.play().catch(() => {});
-    } else if (!show) {
-      video.pause();
-    }
-  };
+  if (reduced) swapText(replayLabel, 'Run the machine');
 
   async function boot() {
-    if (!document.createElement('canvas').getContext) {
-      section.classList.add('hero--static');
-      return;
-    }
-    // everything heavy is fetched here, after first paint
-    const [{ createHero }, { gsap }, { ScrollTrigger }] = await Promise.all([
-      import('../scripts/hero/tallbike'),
-      import('gsap'),
-      import('gsap/ScrollTrigger'),
-    ]);
-    gsap.registerPlugin(ScrollTrigger);
-    const hero = createHero({
-      container: canvasBox,
-      overlay,
+    const { createMachine } = await import('../scripts/hero/machine');
+    const m = createMachine({
+      container: box,
+      labels,
       ink: cssVar('--ink'),
-      accent: '#ff4f00',
+      accent: cssVar('--accent'),
       reduced,
-      small: small(),
+      onStage: (stage) => {
+        for (const l of labels) l.classList.toggle('is-current', l.dataset.stage === stage);
+      },
+      onFinale: () => line2.classList.add('is-inked'),
     });
 
-    const ro = new ResizeObserver(() => hero.resize());
-    ro.observe(canvasBox);
-
-    const recolor = () => hero.setColors(cssVar('--ink'), '#ff4f00');
+    new ResizeObserver(() => m.resize()).observe(box);
+    const recolor = () => m.setColors(cssVar('--ink'), cssVar('--accent'));
     window.addEventListener('themechange', recolor);
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', recolor);
+    new IntersectionObserver(([e]) => m.setActive(e.isIntersecting)).observe(section);
 
-    new IntersectionObserver(([e]) => hero.setActive(e.isIntersecting)).observe(section);
-
-    if (reduced) {
-      // straight to the end state of the scroll story: drawing aside, clip shown (desktop only)
-      view.textContent = 'assembled view';
-      if (!small()) hero.setShift(1);
-      return;
-    }
-
-    ScrollTrigger.create({
-      trigger: section,
-      start: 'top top',
-      end: 'bottom bottom',
-      onUpdate: (st) => {
-        const p = st.progress;
-        if (p > 0.4) loadPoster();
-        hero.setProgress(p / 0.78);
-        const r = gsap.utils.clamp(0, 1, (p - 0.8) / 0.17);
-        hero.setShift(r);
-        reveal(r);
-        cue.style.opacity = String(1 - gsap.utils.clamp(0, 1, p * 12));
-        swapText(view, p > 0.5 ? 'assembled view' : 'exploded view');
-      },
+    replayBtn.addEventListener('click', () => {
+      line2.classList.remove('is-inked');
+      m.replay();
     });
 
-    if (finePointer()) {
-      section.addEventListener('pointermove', (e) => {
-        const r = section.getBoundingClientRect();
-        hero.pointer(((e.clientX - r.left) / r.width) * 2 - 1, ((e.clientY - r.top) / r.height) * 2 - 1);
-      });
-      section.addEventListener('pointerleave', () => hero.pointer(0, 0));
-    } else {
-      // touch: horizontal drag spins the drawing, vertical still scrolls the page
-      let lastX = 0;
-      canvasBox.addEventListener('pointerdown', (e) => (lastX = e.clientX));
-      canvasBox.addEventListener('pointermove', (e) => {
-        if (e.pointerType === 'mouse' && e.buttons === 0) return;
-        hero.drag(e.clientX - lastX);
-        lastX = e.clientX;
-      });
-    }
+    // tap/click drops a ball; a horizontal drag pans the drawing on phones
+    let down: { x: number; y: number; lastX: number; moved: boolean } | null = null;
+    machineEl.addEventListener('pointerdown', (e) => {
+      down = { x: e.clientX, y: e.clientY, lastX: e.clientX, moved: false };
+    });
+    machineEl.addEventListener('pointermove', (e) => {
+      if (!down) return;
+      if (Math.abs(e.clientX - down.x) > 6) down.moved = true;
+      if (down.moved) m.pan(e.clientX - down.lastX);
+      down.lastX = e.clientX;
+    });
+    machineEl.addEventListener('pointerup', (e) => {
+      if (down && !down.moved && Math.abs(e.clientY - down.y) < 8) m.drop(e.clientX, e.clientY);
+      down = null;
+    });
+    machineEl.addEventListener('pointercancel', () => (down = null));
   }
 
-  if (reduced) reveal(1);
-  // don't block first paint: the headline is the LCP, the drawing comes right after
-  if ('requestIdleCallback' in window) requestIdleCallback(() => boot(), { timeout: 600 });
-  else setTimeout(boot, 120);
+  // the headline paints first; the machine (≈20 KB) loads right after
+  if ('requestIdleCallback' in window) requestIdleCallback(() => boot(), { timeout: 500 });
+  else setTimeout(boot, 100);
 </script>
 
 <style>
   .hero {
     position: relative;
-  }
-  /* the tall track is only there when JS drives the scroll story */
-  :global(.js) .hero {
-    height: 320svh;
-  }
-  .hero__stage {
-    position: relative;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    gap: clamp(0.75rem, 2svh, 1.5rem);
     height: 100svh;
-    min-height: 560px;
-    overflow: hidden;
-  }
-  :global(.js) .hero__stage {
-    position: sticky;
-    top: 0;
+    min-height: 600px;
+    max-height: 1100px;
+    padding: calc(var(--frame) + 4.2rem) calc(var(--frame) + var(--gutter)) calc(var(--frame) + 2.6rem);
   }
 
   .hero__meta {
-    position: absolute;
-    top: calc(var(--frame) + 4.4rem);
-    left: calc(var(--frame) + var(--gutter));
-    right: calc(var(--frame) + var(--gutter));
     display: flex;
+    flex-wrap: wrap;
     justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem 1rem;
+  }
+  .hero__controls {
+    display: flex;
+    align-items: center;
     gap: 1rem;
-    z-index: 2;
+  }
+  .hero__replay {
+    padding: 0.55em 0.9em;
+  }
+  .hint-touch {
+    display: none;
+  }
+  @media (hover: none) {
+    .hint-fine {
+      display: none;
+    }
+    .hint-touch {
+      display: inline;
+    }
+  }
+  :global(.no-js) .hero__controls {
+    display: none;
   }
 
-  .hero__canvas {
-    position: absolute;
-    inset: 0;
+  .hero__machine {
+    position: relative;
+    min-height: 0;
+    overflow: hidden;
+    cursor: crosshair;
     touch-action: pan-y;
+    user-select: none;
+    -webkit-user-select: none;
   }
-  .hero__overlay {
+  .hero__canvas,
+  .hero__labels {
     position: absolute;
     inset: 0;
-    pointer-events: none;
-    z-index: 1;
   }
-  .hero__overlay :global(.hero-leaders) {
+  .hero__labels {
+    pointer-events: none;
+  }
+  .hero__static {
     position: absolute;
     inset: 0;
     width: 100%;
     height: 100%;
-    overflow: visible;
+    object-fit: contain;
   }
-  .hero__overlay :global(.hero-leaders line) {
-    stroke: var(--ink-3);
-    stroke-width: 1;
-  }
-  .hero__overlay :global(.hero-label),
-  .hero__overlay :global(.hero-dim) {
+
+  /* callouts: appear as their stage fires */
+  .mlabel,
+  .mstop {
     position: absolute;
     top: 0;
     left: 0;
-    white-space: nowrap;
     will-change: transform;
+  }
+  .mlabel__box {
+    position: absolute;
+    top: 0;
+    display: grid;
+    gap: 0.1rem;
+    padding: 0.25rem 0.45rem;
     font-size: 10.5px;
+    white-space: nowrap;
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    border: 1px solid var(--line-strong);
+    translate: 0 -50%;
+    opacity: 0;
+    transition: opacity 260ms var(--ease-out);
   }
-  .hero__overlay :global(.hero-label) {
-    padding: 0.15rem 0.35rem;
-    background: var(--bg);
-    border: 1px solid var(--line);
+  .mlabel--right .mlabel__box {
+    right: 0;
   }
-  .hero__overlay :global(.hero-dim) {
-    background: var(--bg);
-    padding: 0.1rem 0.3rem;
+  .mlabel__sub {
+    font-size: 9.5px;
+  }
+  .mlabel__code {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--accent-text);
+    text-transform: none;
+  }
+  .mlabel.is-on .mlabel__box,
+  :global(.no-js) .mlabel__box {
+    opacity: 1;
+  }
+  .mstop span {
+    position: absolute;
+    translate: -50% -50%;
+    font-size: 10px;
+    color: var(--ink-3);
+    transition: color 200ms ease;
+  }
+  .mstop.is-on span {
+    color: var(--accent-text);
   }
 
-  .hero__copy {
-    position: absolute;
-    left: calc(var(--frame) + var(--gutter));
-    right: calc(var(--frame) + var(--gutter));
-    bottom: calc(var(--frame) + var(--gutter) + 1rem);
-    z-index: 2;
-    pointer-events: none;
-  }
   .hero__who {
     display: flex;
     flex-wrap: wrap;
     gap: 0.25rem 0.6rem;
-    margin-bottom: 1.1rem;
+    margin-bottom: 0.8rem;
   }
   .hero__title {
-    /* two sentences, two lines, edge to edge: sized off the viewport so it never wraps on desktop */
-    font-size: min(7.4rem, 6.35vw);
-    letter-spacing: -0.035em;
+    font-size: clamp(2.4rem, 5.1vw, 6rem);
+    letter-spacing: -0.04em;
+    line-height: 0.95;
+    font-weight: 800;
   }
   .hero__line {
     display: block;
   }
-  /* line 2 waits in pencil until the skate clip shows up, then gets inked */
+  /* line 2 waits in pencil until the plane lands, then gets inked with an orange underline */
   .hero__line--2 {
-    --r: 0;
-    color: color-mix(in srgb, var(--ink) calc(28% + var(--r) * 72%), transparent);
+    position: relative;
+    width: fit-content;
+    color: color-mix(in srgb, var(--ink) 30%, transparent);
+    transition: color 700ms var(--ease-out);
   }
-  :global(.no-js) .hero__line--2,
-  .hero--static .hero__line--2 {
-    --r: 1;
+  .hero__line--2::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0.3em;
+    bottom: -0.04em;
+    height: 0.07em;
+    background: var(--accent);
+    transform: scaleX(0);
+    transform-origin: right;
+    transition: transform 700ms var(--ease-in-out) 150ms;
+  }
+  .hero__line--2.is-inked,
+  :global(.no-js) .hero__line--2 {
+    color: var(--ink);
+  }
+  .hero__line--2.is-inked::after,
+  :global(.no-js) .hero__line--2::after {
+    transform: scaleX(1);
   }
 
-  .hero__plate {
-    --r: 0;
-    position: absolute;
-    z-index: 2;
-    right: calc(var(--frame) + var(--gutter));
-    top: calc(var(--frame) + 7rem);
-    /* stays above the headline banner */
-    height: max(240px, min(calc(100svh - var(--frame) * 2 - 7rem - 6.35vw * 2 - 9rem), 32vw * 16 / 9));
-    aspect-ratio: 9 / 16;
-    clip-path: inset(calc((1 - var(--r)) * 100%) 0 0 0);
-    visibility: hidden;
-  }
-  .hero__plate[data-shown],
-  :global(.no-js) .hero__plate,
-  .hero--static .hero__plate {
-    visibility: visible;
-  }
-  :global(.no-js) .hero__plate,
-  .hero--static .hero__plate {
-    --r: 1;
-  }
-  .hero__plate video {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border: 1px solid var(--line-strong);
-    background: var(--bg-raised);
-  }
-  .hero__plate figcaption {
-    margin-top: 0.6rem;
-  }
-  .hero__still {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border: 1px solid var(--line-strong);
-  }
-  :global(.no-js) .hero__plate .plate-btn {
+  /* when the drawing pans (phones, portrait tablets) only the active callout shows */
+  .hero__machine[data-pannable] .mlabel:not(.is-current) {
     display: none;
   }
 
-  .hero__cue {
-    position: absolute;
-    left: 50%;
-    bottom: calc(var(--frame) + 1.25rem);
-    transform: translateX(-50%);
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    z-index: 2;
-    color: var(--ink-3);
-  }
-  .hero__cue-line {
-    width: 1px;
-    height: 28px;
-    background: var(--ink-3);
-    transform-origin: top;
-    animation: cue 1.8s var(--ease-in-out) infinite;
-  }
-  @keyframes cue {
-    0% {
-      transform: scaleY(0);
-    }
-    50% {
-      transform: scaleY(1);
-      transform-origin: top;
-    }
-    51% {
-      transform-origin: bottom;
-    }
-    100% {
-      transform: scaleY(0);
-      transform-origin: bottom;
-    }
-  }
-  :global(.no-js) .hero__cue,
-  :global(.no-js) .hero__meta {
-    display: none;
-  }
-
+  /* phones */
   @media (max-width: 760px) {
-    :global(.js) .hero {
-      height: 260svh;
-    }
-    .hero__meta {
-      top: calc(var(--frame) + 3.6rem);
-      flex-direction: column;
-      gap: 0.2rem;
+    .hero {
+      padding-top: calc(var(--frame) + 3.6rem);
+      padding-bottom: calc(var(--frame) + 2.4rem);
+      min-height: 560px;
     }
     .hero__title {
-      font-size: clamp(2.5rem, 12vw, 4rem);
-      letter-spacing: -0.03em;
+      font-size: clamp(2.3rem, 11vw, 3.6rem);
     }
-    .hero__plate {
-      top: calc(var(--frame) + 6.5rem);
-      right: 50%;
-      /* never taller than the gap between the meta row and the headline */
-      height: min(46vw * 16 / 9, 390px, 100svh - 27rem);
-      transform: translateX(50%);
-    }
-    .hero__plate figcaption {
+    .mlabel__box {
       font-size: 9.5px;
     }
-    .hero__cue {
-      display: none;
-    }
-    .hero__overlay :global([data-desktop-only]) {
-      display: none;
-    }
-    .hero__overlay :global(.hero-label),
-    .hero__overlay :global(.hero-dim) {
-      font-size: 9px;
+    .hero__hint {
+      font-size: 9.5px;
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    :global(.js) .hero {
-      height: auto;
-    }
-    /* phones have no room for drawing + clip side by side without the scroll story */
-    @media (max-width: 760px) {
-      .hero__plate {
-        display: none;
-      }
-    }
-    .hero__cue {
-      display: none;
+    .mlabel__box,
+    .hero__line--2,
+    .hero__line--2::after {
+      transition: none;
     }
   }
 </style>

@@ -77,9 +77,7 @@ const videoIO = new IntersectionObserver(
   (entries) => {
     for (const e of entries) {
       const v = e.target as HTMLVideoElement;
-      // the hero plate is on screen from the start but hidden until it wipes in; Hero.astro starts it
-      const parked = !!v.closest('[data-hero-plate]:not([data-shown])');
-      if (e.isIntersecting && !parked && !reducedMotion() && !userPaused.has(v)) {
+      if (e.isIntersecting && !reducedMotion() && !userPaused.has(v)) {
         if (v.preload === 'none') v.preload = 'auto';
         v.play().catch(() => {});
       } else if (!e.isIntersecting) {
@@ -101,9 +99,7 @@ const posterIO = new IntersectionObserver(
   },
   { rootMargin: '800px 0px' },
 );
-document
-  .querySelectorAll<HTMLVideoElement>('video[data-poster]')
-  .forEach((v) => !v.closest('[data-hero-plate]') && posterIO.observe(v));
+document.querySelectorAll<HTMLVideoElement>('video[data-poster]').forEach((v) => posterIO.observe(v));
 
 videos.forEach((v) => {
   videoIO.observe(v);

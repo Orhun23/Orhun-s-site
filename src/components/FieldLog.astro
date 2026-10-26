@@ -5,7 +5,8 @@ import Plate from './Plate.astro';
 import { trips } from '../data/trips';
 
 import snowJump from '../assets/media/field/snow-jump.jpg';
-import skateIndoor from '../assets/media/field/skate-indoor.jpg';
+import skateTrocadero from '../assets/media/field/skate-trocadero.jpg';
+import chrono from '../assets/media/field/backfull-chronophoto.jpg';
 import surf from '../assets/media/field/surf.jpg';
 import bowlAir from '../assets/media/field/skate-bowl-air.jpg';
 import bowl from '../assets/media/field/skate-bowl.jpg';
@@ -30,25 +31,29 @@ import whalePoster from '../assets/media/trips/whale-shark.jpg';
     </div>
 
     <!-- the three boards -->
+    <p class="boards__lead" data-reveal>
+      <span class="mono accent">Board 01 — skate.</span> The ghosts on the box in the machine up top are from this clip: the
+      flat rail at the Trocadéro in Paris, Eiffel Tower in the background. Here it is at full speed.
+    </p>
     <div class="boards">
       <div class="board board--skate">
         <Plate
-          src="/media/field/skate-indoor.mp4"
-          poster={skateIndoor}
-          alt="Orhun skating through an indoor skatepark covered in graffiti"
+          src="/media/field/skate-trocadero.mp4"
+          poster={skateTrocadero}
+          alt="Orhun skating onto a flat rail at the Trocadéro in Paris, the Eiffel Tower behind him"
           fig="Board 01"
-          caption="Skate"
-          meta="Frequency: most days · Bruises: ongoing"
+          caption="Skate · Trocadéro rail"
+          meta="48.86°N 2.29°E · frequency: most days"
         />
       </div>
       <div class="board board--snow">
         <Plate
           src="/media/field/snow-jump.mp4"
           poster={snowJump}
-          alt="Orhun hitting a snowboard jump against a cloudy sky and landing in a spray of snow"
+          alt="Orhun doing a backflip off a snowboard kicker against a cloudy sky, landing in a spray of snow"
           fig="Board 02"
-          caption="Snow"
-          meta="Airtime: enough · Landing: mostly"
+          caption="Snow · the backflip from the machine"
+          meta="Real speed: ≈ 0.7 s in the air"
         />
       </div>
       <div class="board board--surf">
@@ -65,6 +70,34 @@ import whalePoster from '../assets/media/trips/whale-shark.jpg';
           sizes="(max-width: 760px) 100vw, 45vw"
         />
       </div>
+    </div>
+
+    <!-- one still, five exposures: the backfull, aligned frame by frame -->
+    <div class="study">
+      <div class="study__text">
+        <p class="mono"><span class="accent">Fig. 04</span> — Motion study</p>
+        <h3 class="study__title display" data-reveal>Backfull, Cape Verde.</h3>
+        <p class="study__body" data-reveal style="--i:1">
+          A backflip with a full twist, into a pool. Five frames from a handheld phone clip, each one aligned to
+          the background and pasted back where I actually was. Same idea as the machine up top, just wetter.
+        </p>
+        <dl class="study__spec mono" data-reveal style="--i:2">
+          <div><dt class="mono-meta">Exposures</dt><dd>5, over ≈ 0.9 s</dd></div>
+          <div><dt class="mono-meta">Rotation</dt><dd>360° back + full twist</dd></div>
+          <div><dt class="mono-meta">Landing</dt><dd>Wet</dd></div>
+        </dl>
+      </div>
+      <Annotated
+        class="study__img"
+        src={chrono}
+        alt="One photo showing five exposures of Orhun flipping backwards off a pool deck: takeoff, laid out, upside down, twisting, and hitting the water"
+        callouts={[
+          { at: [42, 70], label: 'Takeoff', dir: 'left' },
+          { at: [57, 23], label: 'Inverted', dir: 'right' },
+          { at: [83, 88], label: 'Entry', dir: 'right' },
+        ]}
+        sizes="(max-width: 860px) 100vw, 60vw"
+      />
     </div>
 
     <!-- the bowl in Taghazout: a two-frame sequence -->
@@ -192,6 +225,41 @@ import whalePoster from '../assets/media/trips/whale-shark.jpg';
     max-width: 38ch;
   }
 
+  .boards__lead {
+    max-width: 62ch;
+    margin-bottom: var(--space-l);
+    color: var(--ink-2);
+  }
+  .study {
+    display: grid;
+    grid-template-columns: minmax(0, 4fr) minmax(0, 7fr);
+    gap: var(--space-l) clamp(2rem, 5vw, 5rem);
+    align-items: center;
+    margin-top: var(--space-xl);
+  }
+  .study__title {
+    font-size: var(--step-3);
+    margin-block: 0.6rem 1rem;
+  }
+  .study__body {
+    color: var(--ink-2);
+    max-width: 40ch;
+  }
+  .study__spec {
+    margin-top: var(--space-m);
+    border-top: 1px solid var(--line-strong);
+  }
+  .study__spec div {
+    display: grid;
+    grid-template-columns: 11ch 1fr;
+    gap: 1rem;
+    padding: 0.45rem 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .study__spec dd {
+    text-transform: none;
+    letter-spacing: 0;
+  }
   .boards {
     display: grid;
     grid-template-columns: 1fr 1fr 2fr;
@@ -317,6 +385,9 @@ import whalePoster from '../assets/media/trips/whale-shark.jpg';
     }
   }
   @media (max-width: 860px) {
+    .study {
+      grid-template-columns: 1fr;
+    }
     .field__intro,
     .trip {
       grid-template-columns: 1fr;

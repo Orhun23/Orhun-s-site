@@ -8,7 +8,7 @@ import { site, person } from '../data/site';
   <div class="og">
     <div class="og__frame">
       <p class="og__meta mono">
-        <span><span class="accent">Fig. 01</span> — Tallbike (B-01), assembled view</span>
+        <span><span class="accent">Fig. 01</span> — The machine · 7 stages · 1 ball</span>
         <span class="mono-meta">{person.coords} · Rev {person.age}</span>
       </p>
       <div class="og__canvas" data-og-canvas></div>
@@ -19,14 +19,13 @@ import { site, person } from '../data/site';
     </div>
   </div>
   <script>
-    import { createHero } from '../scripts/hero/tallbike';
+    import { createMachine } from '../scripts/hero/machine';
     import { cssVar } from '../scripts/env';
     document.documentElement.dataset.theme = 'light';
     const box = document.querySelector<HTMLElement>('[data-og-canvas]')!;
-    const overlay = document.createElement('div');
-    const hero = createHero({ container: box, overlay, ink: cssVar('--ink'), accent: '#ff4f00', reduced: true, small: false });
-    hero.resize();
-    document.documentElement.dataset.ogReady = '1';
+    createMachine({ container: box, labels: [], ink: cssVar('--ink'), accent: cssVar('--accent'), reduced: true });
+    // the strobe sprites load async; give them a moment before the screenshot
+    setTimeout(() => (document.documentElement.dataset.ogReady = '1'), 800);
   </script>
 </Base>
 
@@ -58,10 +57,10 @@ import { site, person } from '../data/site';
   }
   .og__canvas {
     position: absolute;
-    top: 30px;
-    right: -30px;
-    width: 600px;
-    height: 580px;
+    top: 44px;
+    left: 20px;
+    right: 20px;
+    height: 370px;
   }
   .og__copy {
     position: absolute;
@@ -73,8 +72,9 @@ import { site, person } from '../data/site';
     margin-bottom: 14px;
   }
   .og__title {
-    font-size: 66px;
+    font-size: 54px;
+    font-weight: 800;
     letter-spacing: -0.04em;
-    max-width: 13ch;
+    line-height: 0.95;
   }
 </style>

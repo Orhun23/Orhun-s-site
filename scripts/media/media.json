@@ -1,5 +1,5 @@
 [
-  {"src": "actionpics + vids/IMG_9358.MOV", "out": "hero/skate-trocadero"},
+  {"src": "actionpics + vids/IMG_9358.MOV", "out": "field/skate-trocadero"},
 
   {"src": "personal project photos/tall bike/IMG_5916.jpeg", "out": "builds/tallbike/frame-wall"},
   {"src": "personal project photos/tall bike/IMG_5917.MP4", "out": "builds/tallbike/welding"},
