@@ -1,0 +1,81 @@
+---
+// 1200×630 social card. Not linked anywhere: scripts/make-assets.mjs screenshots it to public/og.png.
+import Base from '../layouts/Base.astro';
+import { site, person } from '../data/site';
+---
+
+<Base title="OG" bare noindex>
+  <div class="og">
+    <div class="og__frame">
+      <p class="og__meta mono">
+        <span><span class="accent">Fig. 01</span> — Tallbike (B-01), assembled view</span>
+        <span class="mono-meta">{person.coords} · Rev {person.age}</span>
+      </p>
+      <div class="og__canvas" data-og-canvas></div>
+      <div class="og__copy">
+        <p class="mono">{person.name} <span class="mono-meta">— {person.role}, {person.base}</span></p>
+        <p class="og__title display">{site.heroLine[0]}<br />{site.heroLine[1]}</p>
+      </div>
+    </div>
+  </div>
+  <script>
+    import { createHero } from '../scripts/hero/tallbike';
+    import { cssVar } from '../scripts/env';
+    document.documentElement.dataset.theme = 'light';
+    const box = document.querySelector<HTMLElement>('[data-og-canvas]')!;
+    const overlay = document.createElement('div');
+    const hero = createHero({ container: box, overlay, ink: cssVar('--ink'), accent: '#ff4f00', reduced: true, small: false });
+    hero.resize();
+    document.documentElement.dataset.ogReady = '1';
+  </script>
+</Base>
+
+<style>
+  .og {
+    width: 1200px;
+    height: 630px;
+    padding: 18px;
+    background: var(--paper);
+    color: var(--graphite);
+  }
+  .og__frame {
+    position: relative;
+    height: 100%;
+    border: 1px solid rgb(18 19 20 / 0.42);
+    background-image:
+      linear-gradient(rgb(18 19 20 / 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(18 19 20 / 0.05) 1px, transparent 1px);
+    background-size: 30px 30px;
+  }
+  .og__meta {
+    position: absolute;
+    top: 22px;
+    left: 32px;
+    right: 32px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+  }
+  .og__canvas {
+    position: absolute;
+    top: 30px;
+    right: -30px;
+    width: 600px;
+    height: 580px;
+  }
+  .og__copy {
+    position: absolute;
+    left: 32px;
+    bottom: 32px;
+  }
+  .og__copy .mono {
+    font-size: 13px;
+    margin-bottom: 14px;
+  }
+  .og__title {
+    font-size: 66px;
+    letter-spacing: -0.04em;
+    font-variation-settings: 'wdth' 90;
+    max-width: 13ch;
+  }
+</style>

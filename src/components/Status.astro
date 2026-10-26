@@ -1,0 +1,128 @@
+---
+import Annotated from './Annotated.astro';
+import { person } from '../data/site';
+import portrait from '../assets/media/field/snow-spray.jpg';
+
+const readout: [string, string][] = [
+  ['Name', person.name],
+  ['Base', `${person.base} · ${person.coords}`],
+  ['Languages', 'Dutch, Turkish (both native) · English · German, barely'],
+  ['Status', 'Between things, on purpose'],
+  ['Open to', 'Interesting machine problems, freelance'],
+  ['Maybe next', 'Master’s in robotics + entrepreneurship, 2027'],
+  ['Off duty', 'Skate, snowboard, surf, take things apart'],
+];
+---
+
+<section id="status" class="status" data-sheet="02" data-sheet-title="Status">
+  <div class="wrap">
+    <header class="sheet-head mono">
+      <span class="accent">Sheet 02</span>
+      <span>Status</span>
+      <span class="mono-meta">Rev {person.age} · checked: nobody</span>
+    </header>
+
+    <div class="status__grid">
+      <div class="status__copy">
+        <p class="status__lede display" data-reveal>
+          I’m Orhun. Mechatronics engineer from Eindhoven. I’m happiest where the code stops being code and something
+          actually moves.
+        </p>
+        <div class="status__body" data-reveal style="--i:1">
+          <p>
+            Dutch and Turkish, both native, which mostly means I can complain in two languages. I spent the last year
+            on customer sites in the UK and India getting parcel sorters to behave. Before that: robot software, motor
+            drivers written from register maps, a lot of ROS2.
+          </p>
+          <p>
+            Right now I’m between things, on purpose. The job ended in September and I’m not rushing into the next
+            one. I want to work for myself, on stuff that’s actually interesting. Got a machine that doesn’t do what
+            it should? <a class="link-draw accent" href="#contact">Tell me about it.</a>
+          </p>
+          <p>
+            The rest of the time I’m on a board. Skateboard most days, snowboard when there’s snow, surfboard when
+            there’s a wave. Falling off all three, regularly.
+          </p>
+        </div>
+      </div>
+
+      <div class="status__side">
+        <Annotated
+          src={portrait}
+          alt="Orhun snowboarding through a spray of powder, goggles on, close to the camera"
+          fig="Fig. 03"
+          caption="Operator, in natural habitat"
+          meta="Somewhere in the Alps"
+          callouts={[
+            { at: [56, 30], label: 'Goggles: fogged', dir: 'left' },
+            { at: [24, 86], label: 'Snow: mostly in face', dir: 'right' },
+          ]}
+          sizes="(max-width: 760px) 100vw, 40vw"
+          widths={[480, 800, 1200]}
+        />
+        <dl class="readout mono" data-reveal style="--i:2">
+          {
+            readout.map(([k, v]) => (
+              <div class="readout__row">
+                <dt class="mono-meta">{k}</dt>
+                <dd>{v}</dd>
+              </div>
+            ))
+          }
+        </dl>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .status {
+    padding-block: var(--space-xl);
+  }
+  .status__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    gap: var(--space-l) clamp(2rem, 6vw, 7rem);
+    margin-top: var(--space-l);
+  }
+  .status__lede {
+    font-size: var(--step-3);
+    font-weight: 650;
+    line-height: 1.02;
+    letter-spacing: -0.03em;
+    max-width: 18ch;
+  }
+  .status__body {
+    margin-top: var(--space-l);
+    max-width: 56ch;
+    display: grid;
+    gap: 1.1em;
+    font-size: var(--step-1);
+    line-height: 1.45;
+    color: var(--ink-2);
+  }
+  .status__side {
+    display: grid;
+    gap: var(--space-m);
+    align-content: start;
+  }
+  .readout {
+    border-top: 1px solid var(--line-strong);
+  }
+  .readout__row {
+    display: grid;
+    grid-template-columns: 10ch 1fr;
+    gap: 1rem;
+    padding: 0.55rem 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .readout dd {
+    text-transform: none;
+    letter-spacing: 0;
+  }
+  @media (max-width: 860px) {
+    .status__grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

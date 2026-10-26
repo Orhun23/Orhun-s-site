@@ -1,10 +1,10 @@
 ---
 // The title block in the corner of every drawing. Here it doubles as a
 // "you are here": the sheet number/title update as sections scroll past.
-import { person, sheets } from '../data/site';
+import { person } from '../data/site';
 
 interface Props {
-  sheet: { no: string; title: string };
+  sheet: { no: string; title: string; of?: number };
 }
 const { sheet } = Astro.props;
 ---
@@ -17,7 +17,7 @@ const { sheet } = Astro.props;
     </div>
     <div class="tb__cell">
       <dt>Sheet</dt>
-      <dd><span data-tb-no>{sheet.no}</span> / {String(sheets.length).padStart(2, '0')}</dd>
+      <dd><span data-tb-no>{sheet.no}</span>{sheet.of && ` / ${String(sheet.of).padStart(2, '0')}`}</dd>
     </div>
     <div class="tb__cell">
       <dt>Drawn</dt>
@@ -35,6 +35,7 @@ const { sheet } = Astro.props;
 </aside>
 
 <style>
+  /* a one-row strip sitting on the bottom frame line: reads as a title block, covers almost nothing */
   .tb {
     position: fixed;
     right: var(--frame);
@@ -46,68 +47,54 @@ const { sheet } = Astro.props;
     pointer-events: none;
   }
   .tb__grid {
-    display: grid;
-    grid-template-columns: repeat(3, auto);
+    display: flex;
     font-size: 9.5px;
   }
   .tb__cell {
-    padding: 0.35rem 0.6rem 0.4rem;
+    display: flex;
+    gap: 0.5em;
+    align-items: baseline;
+    padding: 0.4rem 0.65rem;
     border-right: 1px solid var(--line);
-    border-bottom: 1px solid var(--line);
-    min-width: 0;
+    white-space: nowrap;
   }
-  .tb__cell:nth-child(3),
   .tb__cell:last-child {
     border-right: 0;
   }
-  .tb__cell:nth-child(n + 4) {
-    border-bottom: 0;
-  }
-  .tb__cell--wide {
-    grid-column: span 2;
-  }
-  .tb__cell:last-child {
-    grid-column: span 2;
+  /* order: sheet, title, drawn, rev, location */
+  .tb__cell:nth-child(2) {
+    order: -1;
   }
   dt {
     color: var(--ink-3);
-    font-size: 8px;
   }
   dd {
-    white-space: nowrap;
     color: var(--ink);
   }
   [data-tb-title] {
     display: inline-block;
-    min-width: 16ch;
+    min-width: 17ch;
   }
 
-  /* phones: just a tiny sheet tag, the full block would eat the screen */
-  @media (max-width: 720px) {
-    .tb {
-      border: 1px solid var(--line-strong);
-      border-right: 0;
-      border-bottom: 0;
+  @media (max-width: 1100px) {
+    .tb__cell:nth-child(3),
+    .tb__cell:nth-child(4) {
+      display: none;
     }
-    .tb__grid {
-      display: flex;
+  }
+  /* phones: sheet + title only */
+  @media (max-width: 720px) {
+    .tb__cell:nth-child(5) {
+      display: none;
     }
     .tb__cell {
-      display: none;
-      border: 0;
-    }
-    .tb__cell:nth-child(1),
-    .tb__cell:nth-child(2) {
-      display: block;
-    }
-    .tb__cell:nth-child(1) {
-      order: 2;
-    }
-    [data-tb-title] {
-      min-width: 0;
+      padding: 0.35rem 0.55rem;
     }
     dt {
       display: none;
+    }
+    [data-tb-title] {
+      min-width: 0;
     }
   }
   @media print {

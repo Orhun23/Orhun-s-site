@@ -278,11 +278,12 @@ body::before {
 .js [data-reveal='wipe'] {
   opacity: 1;
   transform: none;
-  clip-path: inset(100% 0 0 0);
+  /* negative side/bottom insets so callout labels can hang outside the frame once revealed */
+  clip-path: inset(100% -40% -25% -40%);
   transition: clip-path 1100ms var(--ease-in-out);
 }
 .js [data-reveal='wipe'].is-in {
-  clip-path: inset(0 0 0 0);
+  clip-path: inset(-25% -40% -25% -40%);
 }
 
 /* ---------- page transitions (cross-document view transitions, no JS) ---------- */

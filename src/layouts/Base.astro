@@ -10,7 +10,7 @@ interface Props {
   title?: string;
   description?: string;
   /** sheet info shown in the title block before JS takes over */
-  sheet?: { no: string; title: string };
+  sheet?: { no: string; title: string; of?: number };
   noindex?: boolean;
   bare?: boolean; // no chrome (used by /og and /cv print)
 }
@@ -18,7 +18,7 @@ interface Props {
 const {
   title,
   description = site.description,
-  sheet = { no: '01', title: 'General arrangement' },
+  sheet = { no: '01', title: 'General arrangement', of: 6 },
   noindex = false,
   bare = false,
 } = Astro.props;

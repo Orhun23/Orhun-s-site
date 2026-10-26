@@ -1,0 +1,345 @@
+---
+import { Picture } from 'astro:assets';
+import Annotated from './Annotated.astro';
+import Plate from './Plate.astro';
+import { trips } from '../data/trips';
+
+import snowJump from '../assets/media/field/snow-jump.jpg';
+import skateIndoor from '../assets/media/field/skate-indoor.jpg';
+import surf from '../assets/media/field/surf.jpg';
+import bowlAir from '../assets/media/field/skate-bowl-air.jpg';
+import bowl from '../assets/media/field/skate-bowl.jpg';
+import alps from '../assets/media/field/snow-alps.jpg';
+import whalePoster from '../assets/media/trips/whale-shark.jpg';
+---
+
+<section id="field-log" class="field" data-sheet="04" data-sheet-title="Field log">
+  <div class="wrap">
+    <header class="sheet-head mono">
+      <span class="accent">Sheet 04</span>
+      <span>Field log</span>
+      <span class="mono-meta">Test conditions: outdoors, uncontrolled</span>
+    </header>
+
+    <div class="field__intro">
+      <h2 class="field__title display" data-reveal>Out there.</h2>
+      <p class="field__lede" data-reveal style="--i:1">
+        Skateboard most days. Snowboard when there’s snow. Surf when there’s a wave and I’m near it. Plus a habit of
+        booking trips that involve getting up at 3 a.m. to climb something.
+      </p>
+    </div>
+
+    <!-- the three boards -->
+    <div class="boards">
+      <div class="board board--skate">
+        <Plate
+          src="/media/field/skate-indoor.mp4"
+          poster={skateIndoor}
+          alt="Orhun skating through an indoor skatepark covered in graffiti"
+          fig="Board 01"
+          caption="Skate"
+          meta="Frequency: most days · Bruises: ongoing"
+        />
+      </div>
+      <div class="board board--snow">
+        <Plate
+          src="/media/field/snow-jump.mp4"
+          poster={snowJump}
+          alt="Orhun hitting a snowboard jump against a cloudy sky and landing in a spray of snow"
+          fig="Board 02"
+          caption="Snow"
+          meta="Airtime: enough · Landing: mostly"
+        />
+      </div>
+      <div class="board board--surf">
+        <Annotated
+          src={surf}
+          alt="Orhun surfing along the face of a green wave in Indonesia"
+          fig="Board 03"
+          caption="Surf"
+          meta="Lombok, Indonesia · Aug 2025"
+          callouts={[
+            { at: [46, 52], label: 'Operator, upright (for now)', dir: 'left' },
+            { at: [70, 32], label: 'Wave: bigger than it looks', dir: 'right' },
+          ]}
+          sizes="(max-width: 760px) 100vw, 45vw"
+        />
+      </div>
+    </div>
+
+    <!-- the bowl in Taghazout: a two-frame sequence -->
+    <div class="seq">
+      <p class="seq__label mono" data-reveal>
+        <span class="accent">Fig. 04 a–b</span> — Sequence: concrete bowl, Taghazout<br />
+        <span class="mono-meta">30.55°N 9.71°W · May 2026 · crowd for scale</span>
+      </p>
+      <Annotated
+        src={bowl}
+        alt="Orhun dropping into a graffiti-covered concrete bowl by the sea while a crowd watches from the lip"
+        fig="a"
+        caption="Drop in"
+        callouts={[{ at: [42, 41], label: 'Commitment point', dir: 'right' }]}
+        sizes="(max-width: 760px) 100vw, 33vw"
+        widths={[480, 800, 1200]}
+      />
+      <Annotated
+        src={bowlAir}
+        alt="Orhun in the air above the bowl, the skateboard flipping below him"
+        fig="b"
+        caption="Board and operator, briefly separate"
+        callouts={[
+          { at: [66, 63], label: 'Board', dir: 'left' },
+          { at: [74, 44], label: 'Operator', dir: 'right' },
+        ]}
+        sizes="(max-width: 760px) 100vw, 33vw"
+        widths={[480, 800, 1200]}
+      />
+      <Annotated
+        src={alps}
+        alt="Orhun snowboarding down a sunny piste between snowy Alpine peaks"
+        fig="Fig. 05"
+        caption="Alps, the calm bit"
+        meta="47.33°N 12.36°E · Feb 2026"
+        sizes="(max-width: 760px) 100vw, 33vw"
+        widths={[480, 800, 1200]}
+      />
+    </div>
+
+    <!-- trips as spec sheets -->
+    <div class="trips">
+      <header class="trips__head">
+        <h3 class="trips__title display" data-reveal>Trip reports</h3>
+        <p class="mono mono-meta" data-reveal style="--i:1">
+          Coordinates rounded to the nearest village. Sleep figures approximate.
+        </p>
+      </header>
+
+      <ol class="trips__list" role="list">
+        {
+          trips.map((t, i) => (
+            <li class="trip" id={`trip-${t.id}`}>
+              <div class="trip__spec">
+                <p class="trip__no mono">
+                  <span class="accent">T-{String(i + 1).padStart(2, '0')}</span>
+                  <span class="mono-meta">{t.when}</span>
+                </p>
+                <h4 class="trip__place display" data-reveal>{t.country}</h4>
+                <p class="trip__sub mono">
+                  {t.place} · {t.coords}
+                </p>
+                <p class="trip__line" data-reveal style="--i:1">
+                  {t.line}
+                </p>
+                <dl class="trip__table mono" data-reveal style="--i:2">
+                  {t.spec.map(([k, v]) => (
+                    <div>
+                      <dt class="mono-meta">{k}</dt>
+                      <dd>{v}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+              <div class:list={['trip__shots', `trip__shots--${t.shots.length + (t.video ? 1 : 0)}`]}>
+                {t.shots.map((s, j) => (
+                  <div class="trip__shot" data-reveal="wipe" style={`--i:${j}`}>
+                    <Picture
+                      src={s.src}
+                      alt={s.alt}
+                      formats={['avif', 'webp']}
+                      widths={[400, 700, 1000, 1400].filter((w) => w <= s.src.width)}
+                      sizes="(max-width: 760px) 50vw, 25vw"
+                      loading="lazy"
+                    />
+                  </div>
+                ))}
+                {t.video && (
+                  <Plate
+                    src={t.video.src}
+                    poster={whalePoster}
+                    alt={t.video.alt}
+                    fig="Fig. T-01"
+                    caption="Whale shark, actual size"
+                    class="trip__video"
+                  />
+                )}
+              </div>
+            </li>
+          ))
+        }
+      </ol>
+    </div>
+  </div>
+</section>
+
+<style>
+  .field {
+    padding-block: var(--space-xl);
+  }
+  .field__intro {
+    display: grid;
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    gap: var(--space-m) clamp(2rem, 6vw, 7rem);
+    align-items: end;
+    margin-block: var(--space-l);
+  }
+  .field__title {
+    font-size: var(--step-5);
+    letter-spacing: -0.045em;
+  }
+  .field__lede {
+    font-size: var(--step-1);
+    color: var(--ink-2);
+    max-width: 38ch;
+  }
+
+  .boards {
+    display: grid;
+    grid-template-columns: 1fr 1fr 2fr;
+    gap: clamp(1rem, 2.5vw, 2.5rem);
+    align-items: end;
+  }
+  .board--skate {
+    margin-bottom: 18%;
+  }
+
+  .seq {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: clamp(1rem, 2.5vw, 2.5rem);
+    margin-top: var(--space-xl);
+    align-items: start;
+  }
+  .seq__label {
+    grid-column: 1 / -1;
+  }
+
+  .trips {
+    margin-top: var(--space-xl);
+  }
+  .trips__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: end;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding-bottom: var(--space-m);
+    border-bottom: 1px solid var(--line-strong);
+  }
+  .trips__title {
+    font-size: var(--step-4);
+  }
+  .trips__list {
+    display: grid;
+  }
+  .trip {
+    display: grid;
+    grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
+    gap: var(--space-l) clamp(2rem, 4vw, 5rem);
+    padding-block: var(--space-l);
+    border-bottom: 1px solid var(--line);
+  }
+  .trip__spec {
+    position: sticky;
+    top: 6rem;
+    align-self: start;
+  }
+  .trip__no {
+    display: flex;
+    gap: 1rem;
+  }
+  .trip__place {
+    font-size: var(--step-3);
+    margin-block: 0.4rem 0.5rem;
+  }
+  .trip__line {
+    margin-top: var(--space-m);
+    color: var(--ink-2);
+    max-width: 38ch;
+  }
+  .trip__table {
+    margin-top: var(--space-m);
+    border-top: 1px solid var(--line-strong);
+  }
+  .trip__table div {
+    display: grid;
+    grid-template-columns: 12ch 1fr;
+    gap: 1rem;
+    padding: 0.45rem 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .trip__table dd {
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  .trip__shots {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: clamp(0.5rem, 1.2vw, 1rem);
+    align-items: start;
+  }
+  .trip__shots--2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .trip__shots--4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .trip__shot {
+    border: 1px solid var(--line-strong);
+    aspect-ratio: 3 / 4;
+    overflow: hidden;
+    background: var(--bg-raised);
+  }
+  .trip__shots--4 .trip__shot:nth-child(2) {
+    margin-top: 12%;
+  }
+  .trip__shot :global(img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 900ms var(--ease-out);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .trip__shot:hover :global(img) {
+      transform: scale(1.03);
+    }
+  }
+
+  @media (max-width: 960px) {
+    .boards {
+      grid-template-columns: 1fr 1fr;
+    }
+    .board--surf {
+      grid-column: 1 / -1;
+    }
+    .board--skate {
+      margin-bottom: 0;
+    }
+  }
+  @media (max-width: 860px) {
+    .field__intro,
+    .trip {
+      grid-template-columns: 1fr;
+    }
+    .trip__spec {
+      position: static;
+    }
+    .seq {
+      grid-template-columns: 1fr 1fr;
+    }
+    .seq > :global(:last-child) {
+      grid-column: 1 / -1;
+    }
+    .trip__shots,
+    .trip__shots--4 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .trip__shots--3 .trip__shot:first-child {
+      grid-column: 1 / -1;
+      aspect-ratio: 4 / 3;
+    }
+    .trips__head {
+      display: block;
+    }
+  }
+</style>

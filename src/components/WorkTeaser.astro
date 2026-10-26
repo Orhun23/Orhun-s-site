@@ -1,0 +1,120 @@
+---
+import { roles } from '../data/work';
+---
+
+<section id="work" class="wt" data-sheet="05" data-sheet-title="Day job">
+  <div class="wrap">
+    <header class="sheet-head mono">
+      <span class="accent">Sheet 05</span>
+      <span>Day job</span>
+      <span class="mono-meta">Currently paused, on purpose</span>
+    </header>
+
+    <div class="wt__grid">
+      <div>
+        <h2 class="wt__title display" data-reveal>The professional bit.</h2>
+        <p class="wt__lede" data-reveal style="--i:1">
+          PLCs, ROS2, C++ that talks to motors, and a year commissioning parcel sorters abroad. Short version on the right,
+          long version one click away.
+        </p>
+        <div class="wt__ctas" data-reveal style="--i:2">
+          <a class="btn" href="/work" data-magnetic="0.2">Full work history <span aria-hidden="true">→</span></a>
+          <a class="btn" href="/cv/orhun-habib-erdogan-cv.pdf" download data-magnetic="0.2">
+            CV <span class="mono-meta">PDF</span>
+          </a>
+        </div>
+      </div>
+
+      <ol class="wt__list" role="list">
+        {
+          roles.map((r, i) => (
+            <li style={`--i:${i}`} data-reveal>
+              <a href={`/work#${r.id}`} class="wt__row">
+                <span class="wt__when mono mono-meta">
+                  {r.from.slice(-4)}
+                  {r.from.slice(-4) !== r.to.slice(-4) && `–${r.to.slice(-2)}`}
+                </span>
+                <span class="wt__role">
+                  <span class="wt__org">{r.org}</span>
+                  <span class="wt__job">{r.title}</span>
+                </span>
+                <span class="wt__sum">{r.summary}</span>
+              </a>
+            </li>
+          ))
+        }
+      </ol>
+    </div>
+  </div>
+</section>
+
+<style>
+  .wt {
+    padding-block: var(--space-xl);
+  }
+  .wt__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    gap: var(--space-l) clamp(2rem, 6vw, 7rem);
+    margin-top: var(--space-l);
+  }
+  .wt__title {
+    font-size: var(--step-4);
+  }
+  .wt__lede {
+    margin-top: var(--space-m);
+    color: var(--ink-2);
+    max-width: 36ch;
+  }
+  .wt__ctas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: var(--space-l);
+  }
+  .wt__list {
+    border-top: 1px solid var(--line-strong);
+  }
+  .wt__row {
+    display: grid;
+    grid-template-columns: 9ch minmax(0, 1fr) minmax(0, 1.2fr);
+    gap: 1rem;
+    align-items: baseline;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--line);
+    text-decoration: none;
+    transition: background-color var(--dur-hover) ease;
+  }
+  .wt__role {
+    display: grid;
+  }
+  .wt__org {
+    font-weight: 700;
+    font-size: var(--step-1);
+    letter-spacing: -0.01em;
+  }
+  .wt__job,
+  .wt__sum {
+    color: var(--ink-2);
+    font-size: var(--step--1);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .wt__row:hover {
+      background: var(--bg-raised);
+    }
+    .wt__row:hover .wt__org {
+      color: var(--accent-text);
+    }
+  }
+  @media (max-width: 860px) {
+    .wt__grid {
+      grid-template-columns: 1fr;
+    }
+    .wt__row {
+      grid-template-columns: 9ch 1fr;
+    }
+    .wt__sum {
+      grid-column: 2;
+    }
+  }
+</style>

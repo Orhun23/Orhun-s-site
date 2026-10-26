@@ -1,0 +1,261 @@
+---
+import { getCollection, render } from 'astro:content';
+import type { CollectionEntry } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import Annotated from '../../components/Annotated.astro';
+import Plate from '../../components/Plate.astro';
+import { span } from '../../lib/format';
+
+export async function getStaticPaths() {
+  const builds = (await getCollection('builds')).sort((a, b) => a.data.order - b.data.order);
+  return builds.map((build, i) => ({
+    params: { id: build.id },
+    props: { build, next: builds[(i + 1) % builds.length] },
+  }));
+}
+
+interface Props {
+  build: CollectionEntry<'builds'>;
+  next: CollectionEntry<'builds'>;
+}
+const { build, next } = Astro.props;
+const { Content } = await render(build);
+const d = build.data;
+---
+
+<Base title={d.title} description={d.summary} sheet={{ no: d.code, title: d.title }}>
+  <article class="bd">
+    <div class="wrap">
+      <nav class="bd__crumbs mono" aria-label="Breadcrumb">
+        <a class="link-draw" href="/#builds">← Builds</a>
+        <span class="mono-meta">/ {d.code}</span>
+      </nav>
+
+      <header class="bd__head">
+        <p class="mono">
+          <span class="accent">{d.code}</span>
+          <span class="mono-meta"> · {span(d.started, d.finished)}</span>
+        </p>
+        <h1 class="bd__title display">{d.title}</h1>
+        <p class="bd__summary">{d.summary}</p>
+      </header>
+
+      <div class:list={['bd__main', !d.cover && 'bd__main--text']}>
+        {
+          d.cover && (
+            <div class="bd__cover">
+              <Annotated
+                src={d.cover}
+                alt={d.coverAlt ?? ''}
+                dims={d.dimensions}
+                callouts={d.callouts}
+                fig="Fig. 1"
+                caption="General arrangement"
+                eager
+                sizes="(max-width: 860px) 100vw, 58vw"
+              />
+            </div>
+          )
+        }
+
+        <aside class="bd__spec" aria-label="Specification">
+          <p class="mono bd__spec-head"><span class="accent">Spec sheet</span> {d.code}</p>
+          <dl class="mono">
+            <div><dt class="mono-meta">Started</dt><dd>{d.started.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</dd></div>
+            <div><dt class="mono-meta">Finished</dt><dd>{d.finished ? d.finished.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Not yet'}</dd></div>
+            {d.specs.map(([k, v]) => <div><dt class="mono-meta">{k}</dt><dd>{v}</dd></div>)}
+          </dl>
+        </aside>
+      </div>
+
+      <div class="bd__prose prose">
+        <Content />
+      </div>
+
+      {
+        d.video && (
+          <div class="bd__video">
+            <Plate src={d.video.src} poster={d.video.poster} alt={d.video.alt} caption={d.video.caption} />
+          </div>
+        )
+      }
+
+      {
+        d.gallery.length > 0 && (
+          <section class="bd__gallery" aria-label="More figures">
+            {d.gallery.map((g) => (
+              <Annotated
+                class={g.wide ? 'is-wide' : undefined}
+                src={g.src}
+                alt={g.alt}
+                caption={g.caption}
+                sizes={g.wide ? '(max-width: 860px) 100vw, 66vw' : '(max-width: 860px) 100vw, 33vw'}
+              />
+            ))}
+          </section>
+        )
+      }
+
+      <a class="bd__next" href={`/builds/${next.id}/`}>
+        <span class="mono mono-meta">Next drawing</span>
+        <span class="bd__next-title display">
+          <span class="accent mono">{next.data.code}</span> {next.data.title} <span class="bd__arrow" aria-hidden="true">→</span>
+        </span>
+      </a>
+    </div>
+  </article>
+</Base>
+
+<style>
+  .bd {
+    padding-top: calc(var(--frame) + 6rem);
+    padding-bottom: calc(var(--frame) + 5rem);
+  }
+  .bd__crumbs {
+    display: flex;
+    gap: 0.5rem;
+  }
+  .bd__head {
+    margin-block: var(--space-l);
+  }
+  .bd__title {
+    font-size: var(--step-5);
+    letter-spacing: -0.045em;
+    margin-block: 0.75rem 1rem;
+  }
+  .bd__summary {
+    font-size: var(--step-2);
+    line-height: 1.2;
+    letter-spacing: -0.015em;
+    max-width: 30ch;
+    color: var(--ink-2);
+  }
+  .bd__main {
+    display: grid;
+    grid-template-columns: minmax(0, 7fr) minmax(0, 4fr);
+    gap: var(--space-l) clamp(2rem, 5vw, 6rem);
+    align-items: start;
+    margin-top: var(--space-xl);
+  }
+  .bd__main--text {
+    grid-template-columns: minmax(0, 1fr);
+    max-width: 44rem;
+  }
+  .bd__cover :global(.ann__frame) {
+    width: fit-content;
+    max-width: 100%;
+  }
+  .bd__cover :global(img) {
+    max-height: 86svh;
+    width: auto;
+  }
+  .bd__spec {
+    position: sticky;
+    top: 6rem;
+  }
+  .bd__spec-head {
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid var(--line-strong);
+  }
+  .bd__spec div {
+    display: grid;
+    grid-template-columns: 13ch 1fr;
+    gap: 1rem;
+    padding: 0.55rem 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .bd__spec dd {
+    text-transform: none;
+    letter-spacing: 0;
+  }
+  .bd__prose {
+    margin-top: var(--space-xl);
+    max-width: 40rem;
+  }
+  .bd__video {
+    margin-top: var(--space-xl);
+    width: min(100%, 380px);
+  }
+  .bd__gallery {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: clamp(1rem, 2.5vw, 2.5rem);
+    margin-top: var(--space-xl);
+    align-items: start;
+  }
+  .bd__gallery :global(.is-wide) {
+    grid-column: span 2;
+  }
+  .bd__next {
+    display: grid;
+    gap: 0.5rem;
+    margin-top: var(--space-xl);
+    padding-block: var(--space-l);
+    border-top: 1px solid var(--line-strong);
+    text-decoration: none;
+  }
+  .bd__next-title {
+    font-size: var(--step-4);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.4em;
+  }
+  .bd__next-title .mono {
+    font-size: var(--step--1);
+  }
+  .bd__arrow {
+    display: inline-block;
+    color: var(--accent-text);
+    transition: transform var(--dur-ui) var(--ease-out);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .bd__next:hover .bd__arrow {
+      transform: translateX(10px);
+    }
+  }
+
+  .prose {
+    font-size: var(--step-1);
+    line-height: 1.55;
+    color: var(--ink-2);
+  }
+  .prose :global(> * + *) {
+    margin-top: 1em;
+  }
+  .prose :global(h2) {
+    margin-top: 2em;
+    font-size: var(--step-2);
+    color: var(--ink);
+  }
+  .prose :global(strong) {
+    color: var(--ink);
+    font-weight: 650;
+  }
+  .prose :global(ul) {
+    padding-left: 1.2em;
+  }
+  .prose :global(li + li) {
+    margin-top: 0.5em;
+  }
+  .prose :global(li::marker) {
+    color: var(--accent);
+  }
+
+  @media (max-width: 860px) {
+    .bd__main,
+    .bd__gallery {
+      grid-template-columns: 1fr;
+    }
+    .bd__gallery :global(.is-wide) {
+      grid-column: auto;
+    }
+    .bd__spec {
+      position: static;
+    }
+    .bd__cover :global(img) {
+      max-height: none;
+      width: 100%;
+    }
+  }
+</style>

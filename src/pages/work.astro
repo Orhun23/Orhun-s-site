@@ -1,0 +1,348 @@
+---
+import { Picture } from 'astro:assets';
+import Base from '../layouts/Base.astro';
+import { roles, education, skills, certificates, languages } from '../data/work';
+
+import indiaSorter from '../assets/media/work/india-sorter.jpg';
+import ukRobot from '../assets/media/work/uk-robot.jpg';
+import teampiArch from '../assets/media/work/teampi-architecture.jpg';
+import teampiStage from '../assets/media/work/teampi-stage.jpg';
+
+const photos = [
+  { src: indiaSorter, alt: 'A loop sorter snaking through a new distribution centre in India, seen from a mezzanine', cap: 'Loop sorter, India, Dec 2025' },
+  { src: ukRobot, alt: 'Selfie in hi-vis and a hard hat next to a yellow industrial robot arm on a UK site', cap: 'UK site, 2026' },
+  { src: teampiArch, alt: 'Whiteboard covered in a hand-drawn software architecture diagram for the PHINIX robot', cap: 'PHINIX software architecture, v1' },
+  { src: teampiStage, alt: 'Orhun crouching next to the red Team Pi competition robot on stage', cap: 'Team Pi robot, on stage' },
+];
+---
+
+<Base
+  title="Work"
+  description="Work history of Orhun Habib Erdogan: controls commissioning at Vanderlande, ROS2 and C++ at WeFabricate, BLDC drivers at Fyllar, robot software at Team Pi."
+  sheet={{ no: 'W-01', title: 'Work history' }}
+>
+  <div class="work wrap">
+    <nav class="mono" aria-label="Breadcrumb"><a class="link-draw" href="/#work">← Home</a></nav>
+
+    <header class="work__head">
+      <p class="mono"><span class="accent">Sheet W-01</span> <span class="mono-meta">· Work history · Rev 23</span></p>
+      <h1 class="work__title display">The professional bit, in full.</h1>
+      <p class="work__lede">
+        Software that makes real machines move: PLCs on site, ROS2 and C++ in the lab, drivers written from datasheets.
+        Currently between jobs on purpose and open to freelance work that’s actually interesting.
+      </p>
+      <div class="work__ctas">
+        <a class="btn" href="/cv/orhun-habib-erdogan-cv.pdf" download data-magnetic="0.2">Download CV <span class="mono-meta">PDF</span></a>
+        <a class="btn" href="/cv" data-magnetic="0.2">Web CV</a>
+        <a class="btn" href="/#contact" data-magnetic="0.2">Get in touch</a>
+      </div>
+    </header>
+
+    <section aria-labelledby="roles-h">
+      <h2 id="roles-h" class="sheet-head mono">
+        <span class="accent">01</span><span>Roles</span><span class="mono-meta">Click a row for the details</span>
+      </h2>
+      <ol class="roles" role="list">
+        {
+          roles.map((r) => (
+            <li id={r.id}>
+              <details class="role" open={r.id === 'vi-controls'}>
+                <summary class="role__sum">
+                  <span class="role__when mono mono-meta">
+                    {r.from} – {r.to}
+                  </span>
+                  <span class="role__what">
+                    <span class="role__org">{r.org}</span>
+                    <span class="role__title">{r.title}</span>
+                  </span>
+                  <span class="role__place mono mono-meta">{r.place}</span>
+                  <span class="role__toggle" aria-hidden="true" />
+                </summary>
+                <div class="role__body">
+                  <ul>
+                    {r.details.map((d) => (
+                      <li>{d}</li>
+                    ))}
+                  </ul>
+                  <p class="role__stack mono">
+                    {r.stack.map((s) => (
+                      <span>{s}</span>
+                    ))}
+                  </p>
+                </div>
+              </details>
+            </li>
+          ))
+        }
+      </ol>
+    </section>
+
+    <section class="work__photos" aria-label="On the job">
+      {
+        photos.map((p, i) => (
+          <figure data-reveal style={`--i:${i}`}>
+            <div class="work__photo">
+              <Picture src={p.src} alt={p.alt} formats={['avif', 'webp']} widths={[400, 700, 1000]} sizes="(max-width: 760px) 50vw, 25vw" loading="lazy" />
+            </div>
+            <figcaption class="mono mono-meta">{p.cap}</figcaption>
+          </figure>
+        ))
+      }
+    </section>
+
+    <div class="work__grid">
+      <section aria-labelledby="skills-h">
+        <h2 id="skills-h" class="sheet-head mono"><span class="accent">02</span><span>Skills</span></h2>
+        <p class="skills">{skills.join(' · ')}</p>
+      </section>
+
+      <section aria-labelledby="edu-h">
+        <h2 id="edu-h" class="sheet-head mono"><span class="accent">03</span><span>Education</span></h2>
+        <p class="edu__deg">{education.degree}</p>
+        <p class="mono mono-meta">{education.school} · {education.years}</p>
+        <p class="edu__note">{education.note}</p>
+      </section>
+
+      <section aria-labelledby="cert-h">
+        <h2 id="cert-h" class="sheet-head mono"><span class="accent">04</span><span>Certificates</span></h2>
+        <ul class="plain" role="list">{certificates.map((c) => <li>{c}</li>)}</ul>
+      </section>
+
+      <section aria-labelledby="lang-h">
+        <h2 id="lang-h" class="sheet-head mono"><span class="accent">05</span><span>Languages</span></h2>
+        <dl class="langs">
+          {
+            languages.map((l) => (
+              <div>
+                <dt>{l.name}</dt>
+                <dd class="mono mono-meta">{l.level}</dd>
+              </div>
+            ))
+          }
+        </dl>
+      </section>
+    </div>
+  </div>
+</Base>
+
+<style>
+  .work {
+    padding-top: calc(var(--frame) + 6rem);
+    padding-bottom: calc(var(--frame) + 5rem);
+  }
+  .work__head {
+    margin-block: var(--space-l) var(--space-xl);
+  }
+  .work__title {
+    font-size: var(--step-5);
+    letter-spacing: -0.045em;
+    margin-block: 0.75rem 1.25rem;
+    max-width: 12ch;
+  }
+  .work__lede {
+    font-size: var(--step-1);
+    color: var(--ink-2);
+    max-width: 52ch;
+  }
+  .work__ctas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: var(--space-l);
+  }
+
+  .roles {
+    margin-bottom: var(--space-xl);
+  }
+  .roles > li {
+    scroll-margin-top: 6rem;
+  }
+  .role {
+    border-bottom: 1px solid var(--line);
+  }
+  .role__sum {
+    display: grid;
+    grid-template-columns: 19ch minmax(0, 1fr) auto 24px;
+    gap: 1rem;
+    align-items: baseline;
+    padding: 1.1rem 0;
+    cursor: pointer;
+    list-style: none;
+  }
+  .role__sum::-webkit-details-marker {
+    display: none;
+  }
+  .role__what {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25rem 1rem;
+  }
+  .role__org {
+    font-size: var(--step-2);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  .role__title {
+    color: var(--ink-2);
+  }
+  /* plus that turns into a minus */
+  .role__toggle {
+    position: relative;
+    width: 14px;
+    height: 14px;
+    align-self: center;
+  }
+  .role__toggle::before,
+  .role__toggle::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: 14px;
+    height: 1.5px;
+    background: var(--ink);
+    transition: transform var(--dur-ui) var(--ease-out);
+  }
+  .role__toggle::after {
+    transform: rotate(90deg);
+  }
+  .role[open] .role__toggle::after {
+    transform: rotate(0deg);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .role__sum:hover .role__org {
+      color: var(--accent-text);
+    }
+  }
+  .role__body {
+    display: grid;
+    grid-template-columns: 19ch minmax(0, 1fr);
+    gap: 1rem;
+    padding-bottom: 1.5rem;
+  }
+  .role__body ul {
+    grid-column: 2;
+    max-width: 62ch;
+    padding-left: 1.1em;
+    color: var(--ink-2);
+    display: grid;
+    gap: 0.45em;
+  }
+  .role__body li::marker {
+    color: var(--accent);
+  }
+  .role__stack {
+    grid-column: 2;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+  .role__stack span {
+    padding: 0.25rem 0.5rem;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+  }
+  /* smooth open where supported; instant elsewhere (fine — it's frequent) */
+  @supports (interpolate-size: allow-keywords) {
+    .role {
+      interpolate-size: allow-keywords;
+    }
+    .role::details-content {
+      height: 0;
+      overflow: clip;
+      transition:
+        height var(--dur-ui) var(--ease-out),
+        content-visibility var(--dur-ui) allow-discrete;
+    }
+    .role[open]::details-content {
+      height: auto;
+    }
+  }
+
+  .work__photos {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: clamp(0.75rem, 2vw, 1.5rem);
+    margin-bottom: var(--space-xl);
+  }
+  .work__photo {
+    aspect-ratio: 3 / 4;
+    overflow: hidden;
+    border: 1px solid var(--line-strong);
+    background: var(--bg-raised);
+  }
+  .work__photo :global(img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .work__photos figcaption {
+    margin-top: 0.5rem;
+  }
+
+  .work__grid {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: var(--space-l) clamp(2rem, 5vw, 5rem);
+  }
+  .skills {
+    font-size: var(--step-1);
+    line-height: 1.6;
+    padding-top: 0.75rem;
+  }
+  .edu__deg {
+    font-size: var(--step-1);
+    font-weight: 650;
+    padding-top: 0.75rem;
+  }
+  .edu__note {
+    margin-top: 0.4rem;
+    color: var(--ink-2);
+  }
+  .plain {
+    list-style: none;
+    padding: 0.75rem 0 0;
+    display: grid;
+    gap: 0.4rem;
+  }
+  .langs {
+    padding-top: 0.5rem;
+  }
+  .langs div {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.4rem 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  @media (max-width: 860px) {
+    .role__sum {
+      grid-template-columns: minmax(0, 1fr) 24px;
+    }
+    .role__when {
+      grid-column: 1;
+      order: -1;
+    }
+    .role__place {
+      display: none;
+    }
+    .role__toggle {
+      grid-row: 1 / span 2;
+      grid-column: 2;
+    }
+    .role__body {
+      grid-template-columns: 1fr;
+    }
+    .role__body ul,
+    .role__stack {
+      grid-column: 1;
+    }
+    .work__photos {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .work__grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

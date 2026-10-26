@@ -1,0 +1,135 @@
+---
+import { person } from '../data/site';
+---
+
+<section id="contact" class="contact" data-sheet="06" data-sheet-title="Contact">
+  <div class="wrap">
+    <header class="sheet-head mono">
+      <span class="accent">Sheet 06</span>
+      <span>Contact</span>
+      <span class="mono-meta">Response time: faster than a PLC handover</span>
+    </header>
+
+    <h2 class="contact__title display" data-reveal>
+      Got an interesting machine problem? <span class="contact__title-2">Tell me about it.</span>
+    </h2>
+
+    <div class="contact__row" data-reveal style="--i:1">
+      <a class="contact__mail press" href={`mailto:${person.email}`} data-magnetic="0.12">
+        <span class="mono mono-meta">Email</span>
+        <span class="contact__addr">{person.email}</span>
+      </a>
+      <div class="contact__actions">
+        <button class="btn" type="button" data-copy={person.email} data-magnetic="0.2">
+          <span data-copy-label aria-live="polite">Copy email</span>
+        </button>
+        <a class="btn" href={person.linkedin} rel="me noopener" target="_blank" data-magnetic="0.2">
+          LinkedIn <span aria-hidden="true">↗</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <footer class="foot wrap">
+    <dl class="foot__block mono">
+      <div><dt class="mono-meta">Drawn</dt><dd>O.H. Erdogan</dd></div>
+      <div><dt class="mono-meta">Checked</dt><dd>—</dd></div>
+      <div><dt class="mono-meta">Approved</dt><dd>Pending</dd></div>
+      <div><dt class="mono-meta">Location</dt><dd>{person.coords} · <time data-clock>--:--</time></dd></div>
+      <div><dt class="mono-meta">Rev</dt><dd>{person.age} · © {new Date().getFullYear()}</dd></div>
+      <div><dt class="mono-meta">Cookies</dt><dd>None. Not even tracking.</dd></div>
+    </dl>
+  </footer>
+</section>
+
+<style>
+  .contact {
+    padding-top: var(--space-xl);
+    padding-bottom: calc(var(--frame) + 5.5rem);
+  }
+  .contact__title {
+    font-size: var(--step-5);
+    letter-spacing: -0.045em;
+    margin-block: var(--space-l);
+    max-width: 14ch;
+  }
+  .contact__title-2 {
+    color: var(--accent-text);
+  }
+  .contact__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    justify-content: space-between;
+    gap: var(--space-m);
+    padding-block: var(--space-m);
+    border-top: 1px solid var(--line-strong);
+  }
+  .contact__mail {
+    display: grid;
+    gap: 0.4rem;
+    text-decoration: none;
+  }
+  .contact__addr {
+    font-size: var(--step-3);
+    font-weight: 650;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    background: linear-gradient(currentColor, currentColor) no-repeat 0 100% / 0 2px;
+    padding-bottom: 0.15em;
+    transition: background-size var(--dur-ui) var(--ease-out);
+    overflow-wrap: anywhere;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .contact__mail:hover .contact__addr {
+      background-size: 100% 2px;
+    }
+  }
+  .contact__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+  .foot {
+    margin-top: var(--space-xl);
+  }
+  .foot__block {
+    display: grid;
+    grid-template-columns: repeat(6, auto);
+    border: 1px solid var(--line-strong);
+  }
+  .foot__block div {
+    padding: 0.5rem 0.75rem;
+    border-right: 1px solid var(--line);
+  }
+  .foot__block div:last-child {
+    border-right: 0;
+  }
+  .foot__block dd {
+    text-transform: none;
+    letter-spacing: 0;
+  }
+  @media (max-width: 960px) {
+    .foot__block {
+      grid-template-columns: repeat(3, 1fr);
+    }
+    .foot__block div:nth-child(3n) {
+      border-right: 0;
+    }
+    .foot__block div:nth-child(-n + 3) {
+      border-bottom: 1px solid var(--line);
+    }
+  }
+  @media (max-width: 560px) {
+    .foot__block {
+      grid-template-columns: 1fr 1fr;
+    }
+    .foot__block div {
+      border-right: 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .foot__block div:nth-child(odd) {
+      border-right: 1px solid var(--line);
+    }
+  }
+</style>

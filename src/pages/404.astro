@@ -1,0 +1,60 @@
+---
+import Base from '../layouts/Base.astro';
+---
+
+<Base title="Sheet not found" sheet={{ no: '404', title: 'Missing sheet' }} noindex>
+  <section class="nf wrap">
+    <p class="mono"><span class="accent">Error 404</span> <span class="mono-meta">· Sheet not in drawing set</span></p>
+    <h1 class="nf__title display">Sheet not found.</h1>
+    <p class="nf__lede">Probably fell off the tallbike. It happens.</p>
+
+    <svg class="nf__fig" viewBox="0 0 420 160" role="img" aria-label="Line drawing of a tallbike lying on its side next to a dimension line reading 'distance fallen: approx. 2 m'">
+      <g fill="none" stroke="currentColor" stroke-width="1.25">
+        <!-- ground + hatch -->
+        <path d="M10 140h400" />
+        <path d="M20 140l-8 8M40 140l-8 8M60 140l-8 8M80 140l-8 8M100 140l-8 8M120 140l-8 8M140 140l-8 8M160 140l-8 8M180 140l-8 8M200 140l-8 8M220 140l-8 8M240 140l-8 8M260 140l-8 8M280 140l-8 8M300 140l-8 8M320 140l-8 8M340 140l-8 8M360 140l-8 8M380 140l-8 8M400 140l-8 8" opacity=".4" />
+        <!-- the bike, on its side -->
+        <circle cx="80" cy="112" r="28" />
+        <circle cx="80" cy="112" r="3" />
+        <circle cx="168" cy="118" r="22" transform="rotate(-8 168 118)" />
+        <path d="M80 112l46-30 40 4-22 32zM126 82l-10-32M166 86l6-38M116 50l56-2M80 112l36-62M144 118l52-74M172 48l26-6M196 44l14 2M116 50l-6-12h22" />
+      </g>
+      <g stroke="#ff4f00" stroke-width="1.25" fill="none">
+        <path d="M300 30v108M294 36l12-12M294 144l12-12M290 30h20M290 138h20" />
+      </g>
+      <text x="318" y="88" fill="#ff4f00" font-family="var(--font-mono)" font-size="10">≈ 2 m, fallen</text>
+    </svg>
+
+    <div class="nf__ctas">
+      <a class="btn" href="/" data-magnetic="0.2">Back to sheet 01</a>
+      <a class="btn" href="/#builds" data-magnetic="0.2">See the builds</a>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .nf {
+    min-height: 100svh;
+    padding-top: calc(var(--frame) + 8rem);
+    padding-bottom: calc(var(--frame) + 5rem);
+  }
+  .nf__title {
+    font-size: var(--step-5);
+    letter-spacing: -0.045em;
+    margin-block: 0.75rem 1rem;
+  }
+  .nf__lede {
+    font-size: var(--step-2);
+    color: var(--ink-2);
+  }
+  .nf__fig {
+    width: min(100%, 560px);
+    margin-block: var(--space-l);
+    color: var(--ink);
+  }
+  .nf__ctas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+</style>

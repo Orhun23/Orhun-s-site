@@ -1,0 +1,243 @@
+---
+// Clean web CV. Also the source for the PDF (scripts/make-cv-pdf.mjs prints this page to A4).
+// No address, phone, birthdate, gender or nationality — on purpose.
+import Base from '../layouts/Base.astro';
+import { person } from '../data/site';
+import { roles, education, skills, certificates, languages } from '../data/work';
+import { getCollection } from 'astro:content';
+
+const builds = (await getCollection('builds'))
+  .filter((b) => b.id !== 'this-website')
+  .sort((a, b) => a.data.order - b.data.order);
+---
+
+<Base title="CV" description={`CV of ${person.name}, mechatronics engineer in Eindhoven.`} bare>
+  <div class="bar mono">
+    <a class="link-draw" href="/work">← Work</a>
+    <a class="btn" href="/cv/orhun-habib-erdogan-cv.pdf" download>Download PDF</a>
+  </div>
+
+  <article class="cv">
+    <header class="cv__head">
+      <div>
+        <h1 class="cv__name">{person.name}</h1>
+        <p class="cv__role">{person.role} · {person.base}</p>
+      </div>
+      <ul class="cv__contact mono" role="list">
+        <li><a href={`mailto:${person.email}`}>{person.email}</a></li>
+        <li><a href={person.linkedin}>linkedin.com/in/orhunhabiberdogan</a></li>
+        <li><a href={Astro.site?.toString()}>{Astro.site?.host}</a></li>
+      </ul>
+    </header>
+
+    <p class="cv__profile">
+      Mechatronics engineer who’s happiest where software meets real machines. Commissioned loop-sorter control systems
+      on customer sites in the UK and India, wrote ROS2/C++ machine software and a production BLDC driver library.
+      Currently available for freelance projects.
+    </p>
+
+    <section>
+      <h2 class="cv__h mono">Experience</h2>
+      {
+        roles.map((r) => (
+          <div class="cv__role-block">
+            <div class="cv__row">
+              <h3>
+                {r.title} <span class="cv__org">— {r.org}</span>
+              </h3>
+              <p class="mono cv__dates">
+                {r.from} – {r.to}
+              </p>
+            </div>
+            <ul>
+              {r.details.map((d) => (
+                <li>{d}</li>
+              ))}
+            </ul>
+          </div>
+        ))
+      }
+    </section>
+
+    <div class="cv__cols">
+      <section>
+        <h2 class="cv__h mono">Education</h2>
+        <div class="cv__row">
+          <h3>{education.degree}</h3>
+          <p class="mono cv__dates">{education.years}</p>
+        </div>
+        <p>{education.school}. {education.note}</p>
+
+        <h2 class="cv__h mono">Personal builds</h2>
+        <ul class="cv__builds">
+          {builds.map((b) => <li><strong>{b.data.title}</strong> — {b.data.summary}</li>)}
+        </ul>
+      </section>
+      <section>
+        <h2 class="cv__h mono">Skills</h2>
+        <p>{skills.join(', ')}</p>
+        <h2 class="cv__h mono">Certificates</h2>
+        <ul>{certificates.map((c) => <li>{c}</li>)}</ul>
+        <h2 class="cv__h mono">Languages</h2>
+        <p>{languages.map((l) => `${l.name} (${l.level.toLowerCase()})`).join(', ')}</p>
+      </section>
+    </div>
+  </article>
+</Base>
+
+<style>
+  .bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 210mm;
+    margin: 1.5rem auto 0;
+    padding-inline: 16px;
+  }
+  .cv {
+    max-width: 210mm;
+    margin: 1.5rem auto 4rem;
+    padding: 14mm 15mm;
+    background: #fff;
+    color: #141414;
+    font-size: 10pt;
+    line-height: 1.45;
+    box-shadow: 0 1px 0 rgb(0 0 0 / 0.05), 0 10px 40px rgb(0 0 0 / 0.08);
+  }
+  .cv a {
+    text-decoration: none;
+  }
+  .cv__head {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-bottom: 5mm;
+    border-bottom: 1.5px solid #141414;
+  }
+  .cv__name {
+    font-size: 24pt;
+    letter-spacing: -0.03em;
+  }
+  .cv__role {
+    margin-top: 2mm;
+    font-size: 11pt;
+  }
+  .cv__contact {
+    list-style: none;
+    padding: 0;
+    text-align: right;
+    font-size: 8pt;
+    text-transform: none;
+    display: grid;
+    gap: 1mm;
+  }
+  .cv__profile {
+    margin-block: 5mm;
+    font-size: 10.5pt;
+  }
+  .cv__h {
+    margin: 6mm 0 2.5mm;
+    padding-bottom: 1mm;
+    border-bottom: 1px solid #d0d0cc;
+    color: #b83500;
+    font-size: 8pt;
+  }
+  .cv h3 {
+    font-size: 10.5pt;
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+  }
+  .cv__org {
+    font-weight: 500;
+  }
+  .cv__row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+  }
+  .cv__dates {
+    font-size: 8pt;
+    white-space: nowrap;
+    color: #555;
+  }
+  .cv__role-block {
+    break-inside: avoid;
+  }
+  .cv__role-block + .cv__role-block {
+    margin-top: 3.5mm;
+  }
+  .cv ul {
+    padding-left: 4mm;
+    margin-top: 1mm;
+  }
+  .cv li + li {
+    margin-top: 0.6mm;
+  }
+  .cv__cols {
+    display: grid;
+    grid-template-columns: 1.3fr 1fr;
+    gap: 8mm;
+  }
+  .cv__builds {
+    font-size: 9.5pt;
+  }
+
+  @media (max-width: 720px) {
+    .cv {
+      padding: 20px 16px;
+      margin-inline: 0;
+    }
+    .cv__head,
+    .cv__row {
+      flex-direction: column;
+    }
+    .cv__contact {
+      text-align: left;
+    }
+    .cv__cols {
+      grid-template-columns: 1fr;
+      gap: 0;
+    }
+  }
+  @media print {
+    @page {
+      size: A4;
+      margin: 0;
+    }
+    :global(body) {
+      background: #fff;
+    }
+    :global(body::before) {
+      display: none;
+    }
+    .bar,
+    :global(.skip-link) {
+      display: none;
+    }
+    .cv {
+      margin: 0;
+      box-shadow: none;
+      max-width: none;
+      padding: 11mm 13mm;
+      font-size: 9.2pt;
+      line-height: 1.38;
+    }
+    .cv__profile {
+      margin-block: 3.5mm;
+      font-size: 9.6pt;
+    }
+    .cv__h {
+      margin: 4mm 0 2mm;
+    }
+    .cv__role-block + .cv__role-block {
+      margin-top: 2.5mm;
+    }
+    .cv li + li {
+      margin-top: 0.2mm;
+    }
+    .cv__builds {
+      font-size: 8.8pt;
+    }
+  }
+</style>

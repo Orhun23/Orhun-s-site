@@ -1,0 +1,283 @@
+---
+// A photo with drawing furniture on top: dimension lines and leader callouts
+// that draw themselves when the figure scrolls into view.
+// Coordinates are % of the image, so they stay put at every size.
+import type { ImageMetadata } from 'astro';
+import { Picture } from 'astro:assets';
+
+type Pt = [number, number];
+interface Props {
+  src: ImageMetadata;
+  alt: string;
+  dims?: { from: Pt; to: Pt; label: string; side?: 'left' | 'right' | 'top' | 'bottom' }[];
+  callouts?: { at: Pt; label: string; dir?: 'left' | 'right' }[];
+  fig?: string;
+  caption?: string;
+  meta?: string;
+  sizes?: string;
+  widths?: number[];
+  eager?: boolean;
+  class?: string;
+}
+
+const {
+  src,
+  alt,
+  dims = [],
+  callouts = [],
+  fig,
+  caption,
+  meta,
+  sizes = '(max-width: 760px) 100vw, 50vw',
+  widths = [480, 800, 1200, 1600],
+  eager = false,
+  class: cls,
+} = Astro.props;
+---
+
+<figure class:list={['ann', cls]} data-draw>
+  <div class="ann__frame" data-reveal="wipe">
+    <Picture
+      src={src}
+      alt={alt}
+      formats={['avif', 'webp']}
+      widths={widths.filter((w) => w <= src.width)}
+      sizes={sizes}
+      loading={eager ? 'eager' : 'lazy'}
+      fetchpriority={eager ? 'high' : undefined}
+      class="ann__img"
+    />
+    <div class="ann__layer" aria-hidden="true">
+      {
+        dims.map((d, i) => {
+          const vertical = Math.abs(d.to[0] - d.from[0]) < Math.abs(d.to[1] - d.from[1]);
+          const style = vertical
+            ? `left:${d.from[0]}%;top:${Math.min(d.from[1], d.to[1])}%;height:${Math.abs(d.to[1] - d.from[1])}%;--i:${i}`
+            : `left:${Math.min(d.from[0], d.to[0])}%;top:${d.from[1]}%;width:${Math.abs(d.to[0] - d.from[0])}%;--i:${i}`;
+          return (
+            <div class:list={['dim', vertical ? 'dim--v' : 'dim--h', `dim--${d.side ?? 'right'}`]} style={style}>
+              <span class="dim__label mono">{d.label}</span>
+            </div>
+          );
+        })
+      }
+      {
+        callouts.map((c, i) => (
+          <div
+            class:list={['co', `co--${c.dir ?? 'right'}`]}
+            style={`left:${c.at[0]}%;top:${c.at[1]}%;--i:${i + dims.length}`}
+          >
+            <span class="co__dot" />
+            <span class="co__line" />
+            <span class="co__label mono">{c.label}</span>
+          </div>
+        ))
+      }
+    </div>
+  </div>
+  {
+    (fig || caption) && (
+      <figcaption class="ann__cap mono">
+        {fig && <span class="accent">{fig}</span>}
+        {fig && caption && ' — '}
+        {caption}
+        {meta && <span class="mono-meta ann__meta">{meta}</span>}
+      </figcaption>
+    )
+  }
+</figure>
+
+<style>
+  .ann {
+    position: relative;
+  }
+  .ann__frame {
+    position: relative;
+    border: 1px solid var(--line-strong);
+    background: var(--bg-raised);
+  }
+  .ann__frame :global(img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .ann__layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    container-type: inline-size;
+  }
+  .ann__cap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 0.4rem;
+    margin-top: 0.6rem;
+  }
+  .ann__meta {
+    flex-basis: 100%;
+  }
+
+  /* ---- dimension lines ---- */
+  .dim {
+    position: absolute;
+    --c: var(--orange);
+    transition: transform 900ms var(--ease-in-out);
+    transition-delay: calc(400ms + var(--i) * 140ms);
+  }
+  .dim--v {
+    width: 0;
+    border-left: 1px solid var(--c);
+    transform: scaleY(0);
+  }
+  .dim--h {
+    height: 0;
+    border-top: 1px solid var(--c);
+    transform: scaleX(0);
+  }
+  /* architectural slash ticks at both ends */
+  .dim::before,
+  .dim::after {
+    content: '';
+    position: absolute;
+    width: 12px;
+    height: 1px;
+    background: var(--c);
+    transform: rotate(-45deg);
+  }
+  .dim--v::before {
+    top: 0;
+    left: -6.5px;
+  }
+  .dim--v::after {
+    bottom: 0;
+    left: -6.5px;
+  }
+  .dim--h::before {
+    left: -6px;
+    top: -1px;
+  }
+  .dim--h::after {
+    right: -6px;
+    top: -1px;
+  }
+  .dim__label {
+    position: absolute;
+    white-space: nowrap;
+    color: #fff;
+    background: var(--orange);
+    padding: 0.15rem 0.35rem;
+    font-size: 10px;
+    opacity: 0;
+    transition: opacity 300ms ease;
+    transition-delay: calc(1100ms + var(--i) * 140ms);
+  }
+  .dim--v .dim__label {
+    top: 50%;
+    transform: translate(-50%, -50%) rotate(-90deg);
+    left: 0;
+  }
+  .dim--h .dim__label {
+    left: 50%;
+    top: 0;
+    transform: translate(-50%, -50%);
+  }
+
+  /* ---- leader callouts ---- */
+  .co {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    width: 0;
+    height: 0;
+  }
+  .co__dot {
+    position: absolute;
+    left: -4px;
+    top: -4px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--orange);
+    box-shadow: 0 0 0 3px rgb(255 79 0 / 0.25);
+    transform: scale(0.6);
+    opacity: 0;
+    transition:
+      transform 400ms var(--ease-out),
+      opacity 200ms ease;
+    transition-delay: calc(500ms + var(--i) * 140ms);
+  }
+  .co__line {
+    position: absolute;
+    top: 0;
+    height: 1px;
+    width: clamp(1.25rem, 8cqi, 3.5rem);
+    background: var(--orange);
+    transform: scaleX(0);
+    transition: transform 500ms var(--ease-out);
+    transition-delay: calc(650ms + var(--i) * 140ms);
+  }
+  .co__label {
+    position: absolute;
+    top: 0;
+    white-space: nowrap;
+    font-size: 10px;
+    padding: 0.2rem 0.4rem;
+    background: var(--bg);
+    color: var(--ink);
+    border: 1px solid var(--line-strong);
+    transform: translateY(-50%);
+    opacity: 0;
+    transition: opacity 300ms ease;
+    transition-delay: calc(950ms + var(--i) * 140ms);
+  }
+  .co--right .co__line {
+    left: 4px;
+    transform-origin: left;
+  }
+  .co--right .co__label {
+    left: calc(4px + clamp(1.25rem, 8cqi, 3.5rem));
+  }
+  .co--left .co__line {
+    right: 4px;
+    transform-origin: right;
+  }
+  .co--left .co__label {
+    right: calc(4px + clamp(1.25rem, 8cqi, 3.5rem));
+  }
+
+  /* drawn state (no JS = drawn from the start) */
+  :global(.no-js) .ann .dim,
+  .ann:global(.is-in) .dim {
+    transform: none;
+  }
+  :global(.no-js) .ann .dim__label,
+  :global(.no-js) .ann .co__label,
+  :global(.no-js) .ann .co__dot,
+  .ann:global(.is-in) .dim__label,
+  .ann:global(.is-in) .co__label,
+  .ann:global(.is-in) .co__dot {
+    opacity: 1;
+  }
+  :global(.no-js) .ann .co__dot,
+  .ann:global(.is-in) .co__dot {
+    transform: none;
+  }
+  :global(.no-js) .ann .co__line,
+  .ann:global(.is-in) .co__line {
+    transform: none;
+  }
+
+  @media (max-width: 560px) {
+    .co__label,
+    .dim__label {
+      font-size: 9px;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .dim,
+    .co__line,
+    .co__dot {
+      transition: none;
+    }
+  }
+</style>

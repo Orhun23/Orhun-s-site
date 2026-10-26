@@ -1,23 +1,11 @@
 /**
  * The hero: an exploded-view line drawing of the tallbike that assembles as you scroll.
  *
- * Everything is plain line geometry (no meshes, no lights) so it reads like a CAD drawing
- * and stays cheap on phones. Rendering is on-demand: we only draw when scroll, pointer,
- * the intro "plotter" pass or the tilt spring actually changed something.
+ * It's all straight lines under an orthographic projection, so instead of shipping a
+ * 500 KB 3D engine this is a small projector onto a 2D canvas: crisp strokes, proper DPR,
+ * and it only redraws when scroll, pointer, the intro "plotter" pass or the tilt spring
+ * actually changed something.
  */
-import {
-  BufferGeometry,
-  Color,
-  Float32BufferAttribute,
-  Group,
-  LineBasicMaterial,
-  LineSegments,
-  OrthographicCamera,
-  Scene,
-  Vector3,
-  WebGLRenderer,
-} from 'three';
-
 type V3 = [number, number, number];
 type Seg = [V3, V3];
 
@@ -264,14 +252,6 @@ const dimSegs: Seg[] = [
   [p(1.03, DIM_Y - 0.03), p(1.09, DIM_Y + 0.03)],
 ];
 
-const toGeometry = (segs: Seg[]) => {
-  const pos: number[] = [];
-  for (const [a, b] of segs) pos.push(...a, ...b);
-  const g = new BufferGeometry();
-  g.setAttribute('position', new Float32BufferAttribute(pos, 3));
-  return g;
-};
-
 const centroid = (segs: Seg[]): V3 => {
   let x = 0,
     y = 0,
@@ -295,6 +275,29 @@ const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
 const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
+/* ---------- tiny 3D maths: Euler XYZ (same convention as three.js) ---------- */
+type M3 = [number, number, number, number, number, number, number, number, number];
+const euler = (x: number, y: number, z: number): M3 => {
+  const a = Math.cos(x),
+    b = Math.sin(x),
+    c = Math.cos(y),
+    d = Math.sin(y),
+    e = Math.cos(z),
+    f = Math.sin(z);
+  const ae = a * e,
+    af = a * f,
+    be = b * e,
+    bf = b * f;
+  return [c * e, -c * f, d, af + be * d, ae - bf * d, -b * c, bf - ae * d, be + af * d, a * c];
+};
+const mul = (m: M3, v: V3): V3 => [
+  m[0] * v[0] + m[1] * v[1] + m[2] * v[2],
+  m[3] * v[0] + m[4] * v[1] + m[5] * v[2],
+  m[6] * v[0] + m[7] * v[1] + m[8] * v[2],
+];
+
+const BIKE_CENTRE: V3 = [0.53, 0.9, 0];
+
 /* ---------- public API ---------- */
 export type HeroOptions = {
   container: HTMLElement; // canvas goes in here
@@ -316,40 +319,30 @@ export type HeroScene = {
   destroy(): void;
 };
 
+type Part = PartDef & {
+  home: V3;
+  local: Seg[];
+  localAccent: Seg[];
+  label: HTMLElement;
+  leader: SVGLineElement;
+  t: number;
+  labelW: number;
+  anchor: V3; // current position in model space, for the label
+};
+
 export function createHero(opts: HeroOptions): HeroScene {
   const { container, overlay, reduced } = opts;
   let small = opts.small;
+  let ink = opts.ink;
+  let accent = opts.accent;
 
-  const renderer = new WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'low-power' });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.setClearColor(0x000000, 0);
-  container.appendChild(renderer.domElement);
-  renderer.domElement.setAttribute('aria-hidden', 'true');
+  const canvas = document.createElement('canvas');
+  canvas.setAttribute('aria-hidden', 'true');
+  canvas.style.width = '100%';
+  canvas.style.height = '100%';
+  container.appendChild(canvas);
+  const ctx = canvas.getContext('2d')!;
 
-  const scene = new Scene();
-  const camera = new OrthographicCamera(-1, 1, 1, -1, -10, 10);
-  camera.position.set(0, 0, 5);
-
-  const inkMat = new LineBasicMaterial({ color: new Color(opts.ink), transparent: true });
-  const accentMat = new LineBasicMaterial({ color: new Color(opts.accent), transparent: true });
-  const faintMat = new LineBasicMaterial({ color: new Color(opts.ink), transparent: true, opacity: 0.35 });
-
-  // the whole drawing rotates as one; parts move inside it
-  const rig = new Group();
-  const BIKE_CENTRE = new Vector3(0.53, 0.9, 0);
-  rig.position.set(0, 0, 0);
-  scene.add(rig);
-  const model = new Group();
-  model.position.copy(BIKE_CENTRE).multiplyScalar(-1);
-  rig.add(model);
-
-  const ground = new LineSegments(toGeometry(groundSegs), faintMat);
-  model.add(ground);
-  const dimGeo = toGeometry(dimSegs);
-  const dims = new LineSegments(dimGeo, accentMat);
-  model.add(dims);
-
-  type Part = PartDef & { group: Group; home: Vector3; lines: LineSegments[]; label?: HTMLElement; leader?: SVGLineElement; t: number; labelW?: number };
   const svgNS = 'http://www.w3.org/2000/svg';
   const svg = document.createElementNS(svgNS, 'svg');
   svg.classList.add('hero-leaders');
@@ -357,14 +350,6 @@ export function createHero(opts: HeroOptions): HeroScene {
 
   const built: Part[] = parts.map((def) => {
     const c = centroid(def.segs);
-    const group = new Group();
-    const home = new Vector3(...c);
-    group.position.copy(home);
-    const lines = [new LineSegments(toGeometry(recentre(def.segs, c)), inkMat)];
-    if (def.accent) lines.push(new LineSegments(toGeometry(recentre(def.accent, c)), accentMat));
-    lines.forEach((l) => group.add(l));
-    model.add(group);
-
     const label = document.createElement('div');
     label.className = 'hero-label mono';
     if (!def.mobile) label.dataset.desktopOnly = '';
@@ -373,17 +358,25 @@ export function createHero(opts: HeroOptions): HeroScene {
     const leader = document.createElementNS(svgNS, 'line');
     if (!def.mobile) leader.dataset.desktopOnly = '';
     svg.appendChild(leader);
-    return { ...def, group, home, lines, label, leader, t: 0 };
+    return {
+      ...def,
+      home: c,
+      local: recentre(def.segs, c),
+      localAccent: def.accent ? recentre(def.accent, c) : [],
+      label,
+      leader,
+      t: 0,
+      labelW: 0,
+      anchor: c,
+    };
   });
 
-  // dimension labels
   const dimLabels = [
-    { el: document.createElement('div'), at: new Vector3(DIM_X - 0.06, 0.9, 0), text: 'H ≈ 2× a normal bike', rotate: true },
-    { el: document.createElement('div'), at: new Vector3(0.53, DIM_Y - 0.05, 0), text: 'Wheelbase: 1× a normal bike', rotate: false },
+    { el: document.createElement('div'), at: [DIM_X - 0.06, 0.9, 0] as V3, text: 'H ≈ 2× a normal bike', rotate: true },
+    { el: document.createElement('div'), at: [0.53, DIM_Y - 0.05, 0] as V3, text: 'Wheelbase: 1× a normal bike', rotate: false },
   ];
   dimLabels.forEach((d) => {
     d.el.className = 'hero-dim mono accent';
-    if (d.rotate) d.el.dataset.rotate = '';
     d.el.textContent = d.text;
     overlay.appendChild(d.el);
   });
@@ -399,19 +392,56 @@ export function createHero(opts: HeroOptions): HeroScene {
   let raf = 0;
   let width = 1;
   let height = 1;
+  let dpr = 1;
 
   const BASE_ROT_Y = -0.62;
   const BASE_ROT_X = 0.16;
+
+  // per-frame view: rig transform + orthographic window
+  let rigM: M3 = euler(0, 0, 0);
+  let rigPos: V3 = [0, 0, 0];
+  let rigScale = 1;
+  let halfW = 1;
+  let halfH = 1;
+
+  /** model-space point → screen px */
+  const project = (v: V3): [number, number] => {
+    const w = mul(rigM, [
+      (v[0] - BIKE_CENTRE[0]) * rigScale,
+      (v[1] - BIKE_CENTRE[1]) * rigScale,
+      (v[2] - BIKE_CENTRE[2]) * rigScale,
+    ]);
+    const x = w[0] + rigPos[0];
+    const y = w[1] + rigPos[1];
+    return [((x + halfW) / (2 * halfW)) * width, ((halfH - y) / (2 * halfH)) * height];
+  };
 
   function fit() {
     const r = container.getBoundingClientRect();
     width = Math.max(1, r.width);
     height = Math.max(1, r.height);
-    renderer.setSize(width, height, false);
-    renderer.domElement.style.width = '100%';
-    renderer.domElement.style.height = '100%';
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.round(width * dpr);
+    canvas.height = Math.round(height * dpr);
     svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
   }
+
+  function strokeSegs(segs: Seg[], count: number, xf: (v: V3) => V3, color: string, alpha: number) {
+    if (count <= 0 || alpha <= 0) return;
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = color;
+    ctx.beginPath();
+    for (let i = 0; i < count; i++) {
+      const [a, b] = segs[i];
+      const [ax, ay] = project(xf(a));
+      const [bx, by] = project(xf(b));
+      ctx.moveTo(ax, ay);
+      ctx.lineTo(bx, by);
+    }
+    ctx.stroke();
+  }
+
+  const identity = (v: V3) => v;
 
   function frame() {
     const a = clamp01(progress / 0.64); // assembly
@@ -420,77 +450,64 @@ export function createHero(opts: HeroOptions): HeroScene {
     // zoom: exploded view needs room, the assembled bike can fill the sheet
     const worldH = (small ? 3.5 : 3.75) - easeInOut(a) * (small ? 0.65 : 0.55);
     const aspect = width / height;
-    let halfH = worldH / 2;
-    let halfW = halfH * aspect;
+    halfH = worldH / 2;
+    halfW = halfH * aspect;
     const minHalfW = (small ? 1.25 : 1.6) + (small ? (1 - easeInOut(a)) * 0.35 : 0);
     if (halfW < minHalfW) {
       halfW = minHalfW;
       halfH = halfW / aspect;
     }
-    camera.left = -halfW;
-    camera.right = halfW;
-    camera.top = halfH;
-    camera.bottom = -halfH;
-    camera.updateProjectionMatrix();
 
-    // where the drawing sits on the sheet (desktop: right of the headline)
     // the headline is a banner along the bottom, so the drawing lives in the upper part of the sheet
     const anchorX = small ? 0 : halfW * 0.08;
-    const anchorY = halfH * (small ? 0.24 : 0.2) - (1 - easeInOut(a)) * halfH * (small ? 0.04 : 0.1);
-    rig.position.set(anchorX - shift * halfW * (small ? 0 : 0.3), anchorY + shift * (small ? halfH * 0.1 : 0), 0);
-    rig.scale.setScalar(1 - shift * (small ? 0.25 : 0.12));
+    const anchorY = halfH * (small ? 0.26 : 0.29) - (1 - easeInOut(a)) * halfH * (small ? 0.05 : 0.17);
+    rigPos = [anchorX - shift * halfW * (small ? 0 : 0.3), anchorY + shift * (small ? halfH * 0.1 : 0), 0];
+    rigScale = 1 - shift * (small ? 0.25 : 0.12);
+    rigM = euler(BASE_ROT_X + tilt.x, BASE_ROT_Y + tilt.y + dragAngle, 0);
 
-    rig.rotation.set(BASE_ROT_X + tilt.x, BASE_ROT_Y + tilt.y + dragAngle, 0);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, width, height);
+    ctx.lineWidth = small ? 1 : 1.1;
+    ctx.lineCap = 'round';
+
+    // ground + dimensions live in model space
+    strokeSegs(groundSegs, Math.floor(groundSegs.length * clamp01(intro * 1.4)), identity, ink, 0.35 * (1 - shift * 0.6));
+    strokeSegs(dimSegs, Math.floor(dimSegs.length * d), identity, accent, 1 - shift * 0.5);
 
     // parts: each moves home inside its own window of the timeline
     for (const part of built) {
       const local = easeOut(clamp01((a - part.start) / 0.45));
       part.t = local;
       const k = (1 - local) * (small ? 0.72 : 1);
-      part.group.position.set(
-        part.home.x + part.explode[0] * k,
-        part.home.y + part.explode[1] * k,
-        part.home.z + part.explode[2] * k,
-      );
-      part.group.rotation.set(part.rot[0] * k, part.rot[1] * k, part.rot[2] * k);
-
+      const pos: V3 = [
+        part.home[0] + part.explode[0] * k,
+        part.home[1] + part.explode[1] * k,
+        part.home[2] + part.explode[2] * k,
+      ];
+      const r = euler(part.rot[0] * k, part.rot[1] * k, part.rot[2] * k);
+      const xf = (v: V3): V3 => {
+        const q = mul(r, v);
+        return [q[0] + pos[0], q[1] + pos[1], q[2] + pos[2]];
+      };
       // plotter intro: lines draw themselves part by part
       const draw = clamp01(intro * 1.6 - part.start * 1.2);
-      for (const l of part.lines) {
-        const count = l.geometry.attributes.position.count;
-        l.geometry.setDrawRange(0, Math.floor((count * draw) / 2) * 2);
-      }
+      strokeSegs(part.local, Math.floor(part.local.length * draw), xf, ink, 1 - shift * 0.55);
+      strokeSegs(part.localAccent, Math.floor(part.localAccent.length * draw), xf, accent, 1 - shift * 0.5);
+      part.anchor = pos;
     }
-    ground.geometry.setDrawRange(0, Math.floor((ground.geometry.attributes.position.count * clamp01(intro * 1.4)) / 2) * 2);
-    dimGeo.setDrawRange(0, Math.floor((dimGeo.attributes.position.count * d) / 2) * 2);
-    inkMat.opacity = 1 - shift * 0.55;
-    faintMat.opacity = 0.35 * (1 - shift * 0.6);
-    accentMat.opacity = 1 - shift * 0.5;
+    ctx.globalAlpha = 1;
 
-    renderer.render(scene, camera);
-    placeLabels(a, d);
+    placeLabels(d);
   }
 
-  const tmp = new Vector3();
-  function toScreen(v: Vector3) {
-    tmp.copy(v).project(camera);
-    return [(tmp.x * 0.5 + 0.5) * width, (-tmp.y * 0.5 + 0.5) * height] as const;
-  }
-
-  function placeLabels(a: number, d: number) {
+  function placeLabels(d: number) {
     const introVisible = clamp01(intro * 1.4 - 0.4);
     for (const part of built) {
-      if (!part.label || !part.leader) continue;
-      part.group.updateWorldMatrix(true, false);
-      const world = part.group.getWorldPosition(new Vector3());
-      const [x, y] = toScreen(world);
+      const [x, y] = project(part.anchor);
       const off = small ? 54 : 110;
       // keep labels on the sheet: clamp against the measured label width
       const lw = (part.labelW ||= part.label.offsetWidth);
-      const lx =
-        part.labelSide > 0
-          ? Math.min(x + off, width - lw - 8)
-          : Math.max(x - off, lw + 8);
+      const lx = part.labelSide > 0 ? Math.min(x + off, width - lw - 8) : Math.max(x - off, lw + 8);
       const ly = y - (small ? 18 : 34);
       const op = clamp01(1 - part.t * 1.6) * introVisible * (1 - shift);
       part.label.style.transform = `translate(${lx}px, ${ly}px) translate(${part.labelSide > 0 ? '0' : '-100%'}, -50%)`;
@@ -502,25 +519,21 @@ export function createHero(opts: HeroOptions): HeroScene {
       part.leader.style.opacity = String(op);
     }
     for (const dl of dimLabels) {
-      const w = dl.at.clone();
-      model.localToWorld(w);
-      const [x, y] = toScreen(w);
+      const [x, y] = project(dl.at);
       dl.el.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%)${dl.rotate ? ' rotate(-90deg)' : ''}`;
       dl.el.style.opacity = String(clamp01((d - 0.5) * 2) * (1 - shift));
     }
-    void a;
   }
 
   /* ---------- loop: only runs while something is moving ---------- */
   function loop(now: number) {
     raf = 0;
     let moving = false;
-
     if (intro < 1) {
       intro = clamp01((now - introStart) / 1900);
       moving = true;
     }
-    // critically damped-ish spring towards pointer target
+    // critically damped-ish spring towards the pointer target
     const k = 0.085;
     tilt.x += (tilt.tx - tilt.x) * k;
     tilt.y += (tilt.ty - tilt.y) * k;
@@ -530,7 +543,6 @@ export function createHero(opts: HeroOptions): HeroScene {
       tilt.vy *= 0.92;
       moving = true;
     }
-
     frame();
     if (moving && active) raf = requestAnimationFrame(loop);
   }
@@ -552,11 +564,11 @@ export function createHero(opts: HeroOptions): HeroScene {
       shift = clamp01(v);
       kick();
     },
-    setColors(ink, accent) {
-      inkMat.color.set(ink);
-      faintMat.color.set(ink);
-      accentMat.color.set(accent);
-      kick();
+    setColors(i, a) {
+      ink = i;
+      accent = a;
+      if (active) kick();
+      else frame();
     },
     pointer(nx, ny) {
       if (reduced) return;
@@ -577,13 +589,11 @@ export function createHero(opts: HeroOptions): HeroScene {
       small = window.matchMedia('(max-width: 760px)').matches;
       built.forEach((b) => (b.labelW = 0));
       fit();
-      kick();
       frame();
     },
     destroy() {
       cancelAnimationFrame(raf);
-      renderer.dispose();
-      renderer.domElement.remove();
+      canvas.remove();
       overlay.replaceChildren();
     },
   };

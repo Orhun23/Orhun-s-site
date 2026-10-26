@@ -41,14 +41,21 @@ for (const w of widths) {
     await page.waitForTimeout(1500);
     await el.screenshot({ path: path.join(out, `${tag}-sel.png`) });
   } else if (flag('--full')) {
-    // walk down so lazy things load and reveals fire, then shoot full page
+    // fullPage capture stretches the viewport (and every svh unit with it), so instead
+    // step through the page one viewport at a time and save numbered frames
+    const vh = heights[w] ?? 900;
     const h = await page.evaluate(() => document.documentElement.scrollHeight);
-    for (let y = 0; y < h; y += 500) {
-      await page.evaluate((y) => window.scrollTo(0, y), y);
-      await page.waitForTimeout(120);
+    const from = Number(opt('--from', 0));
+    let n = 0;
+    for (let y = from; y < h; y += vh) {
+      await page.evaluate((y) => {
+        const l = window.__lenis;
+        if (l) l.scrollTo(y, { immediate: true });
+        else window.scrollTo(0, y);
+      }, y);
+      await page.waitForTimeout(1300);
+      await page.screenshot({ path: path.join(out, `${tag}-p${String(n++).padStart(2, '0')}.png`) });
     }
-    await page.waitForTimeout(1200);
-    await page.screenshot({ path: path.join(out, `${tag}-full.png`), fullPage: true });
   } else {
     for (const f of at) {
       await page.evaluate((f) => {
