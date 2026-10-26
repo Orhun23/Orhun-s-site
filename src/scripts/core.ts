@@ -2,6 +2,16 @@
 // magnetic buttons load at idle so they never sit between the user and the first paint.
 import { reducedMotion } from './env';
 
+/** swap text with a short opacity + blur cross-fade, so it doesn't just teleport */
+const swapText = (el: Element, text: string) => {
+  if (el.textContent === text) return;
+  el.textContent = text;
+  (el as HTMLElement).animate(
+    reducedMotion() ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 0, filter: 'blur(2px)' }, { opacity: 1, filter: 'blur(0)' }],
+    { duration: 180, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' },
+  );
+};
+
 const idle = (fn: () => void) =>
   'requestIdleCallback' in window ? requestIdleCallback(fn, { timeout: 1500 }) : setTimeout(fn, 200);
 
@@ -28,8 +38,8 @@ if (tbNo && tbTitle && sheets.length) {
       for (const e of entries) {
         if (!e.isIntersecting) continue;
         const el = e.target as HTMLElement;
-        tbNo.textContent = el.dataset.sheet ?? '';
-        tbTitle.textContent = el.dataset.sheetTitle ?? '';
+        swapText(tbNo, el.dataset.sheet ?? '');
+        swapText(tbTitle, el.dataset.sheetTitle ?? '');
       }
     },
     // a thin band across the middle of the viewport decides the "current" sheet
@@ -122,12 +132,12 @@ document.querySelectorAll<HTMLButtonElement>('[data-copy]').forEach((btn) => {
   btn.addEventListener('click', async () => {
     try {
       await navigator.clipboard.writeText(btn.dataset.copy ?? '');
-      if (label) label.textContent = 'Copied';
+      if (label) swapText(label, 'Copied');
     } catch {
-      if (label) label.textContent = 'Copy failed — select it';
+      if (label) swapText(label, 'Copy failed — select it');
     }
     clearTimeout(t);
-    t = window.setTimeout(() => label && (label.textContent = original), 1800);
+    t = window.setTimeout(() => label && swapText(label, original), 1800);
   });
 });
 

@@ -26,6 +26,7 @@ for (const w of widths) {
     reducedMotion: flag('--reduced') ? 'reduce' : 'no-preference',
     colorScheme: flag('--dark') ? 'dark' : 'light',
     hasTouch: w < 800,
+    javaScriptEnabled: !flag('--nojs'),
     isMobile: w < 500,
   });
   const page = await ctx.newPage();

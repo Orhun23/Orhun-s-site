@@ -28,7 +28,7 @@ export function start() {
         yTo((e.clientY - (r.top + r.height / 2)) * strength);
       });
       el.addEventListener('pointerleave', () => {
-        gsap.to(el, { x: 0, y: 0, duration: 0.7, ease: 'elastic.out(1, 0.45)' });
+        gsap.to(el, { x: 0, y: 0, duration: 0.5, ease: 'back.out(1.7)' });
       });
     });
   }

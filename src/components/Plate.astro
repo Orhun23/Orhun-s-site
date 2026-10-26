@@ -24,6 +24,7 @@ const p = await getImage({ src: poster, width: Math.min(poster.width, 900), form
     <video muted playsinline loop preload="none" data-poster={p.src} data-autoplay aria-label={alt}>
       <source src={src} type="video/mp4" />
     </video>
+    <noscript><img class="plate__still" src={p.src} alt={alt} loading="lazy" /></noscript>
     <button class="plate-btn press" type="button" data-play aria-label="Play video" aria-pressed="false">
       <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"
         ><path class="i-play" d="M4 2.5v11l9-5.5z" fill="currentColor"></path><path
@@ -65,5 +66,15 @@ const p = await getImage({ src: poster, width: Math.min(poster.width, 900), form
   }
   figcaption {
     margin-top: 0.6rem;
+  }
+  .plate__still {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  :global(.no-js) .plate-btn {
+    display: none;
   }
 </style>

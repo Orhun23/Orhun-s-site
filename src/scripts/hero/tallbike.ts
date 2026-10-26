@@ -537,25 +537,30 @@ export function createHero(opts: HeroOptions): HeroScene {
   }
 
   /* ---------- loop: only runs while something is moving ---------- */
+  let last = 0;
   function loop(now: number) {
     raf = 0;
     let moving = false;
+    // normalise to 60 fps so the spring feels the same on 60 Hz and 120 Hz screens
+    const steps = last ? Math.min((now - last) / 16.67, 4) : 1;
+    last = now;
     if (intro < 1) {
       intro = clamp01((now - introStart) / 1900);
       moving = true;
     }
     // critically damped-ish spring towards the pointer target
-    const k = 0.085;
+    const k = 1 - Math.pow(1 - 0.085, steps);
     tilt.x += (tilt.tx - tilt.x) * k;
     tilt.y += (tilt.ty - tilt.y) * k;
     if (Math.abs(tilt.tx - tilt.x) > 1e-4 || Math.abs(tilt.ty - tilt.y) > 1e-4) moving = true;
     if (Math.abs(tilt.vy) > 1e-4) {
-      dragAngle += tilt.vy;
-      tilt.vy *= 0.92;
+      dragAngle += tilt.vy * steps;
+      tilt.vy *= Math.pow(0.92, steps);
       moving = true;
     }
     frame();
     if (moving && active) raf = requestAnimationFrame(loop);
+    else last = 0;
   }
   const kick = () => {
     if (!raf && active) raf = requestAnimationFrame(loop);

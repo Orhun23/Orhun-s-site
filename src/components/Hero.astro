@@ -31,6 +31,7 @@ const [line1, line2] = site.heroLine;
       >
         <source src="/media/hero/skate-trocadero.mp4" type="video/mp4" />
       </video>
+      <noscript><img class="hero__still" src={poster.src} alt="Orhun skating at the Trocadéro in Paris, the Eiffel Tower behind him" /></noscript>
       <button class="plate-btn press" type="button" data-play aria-label="Play video" aria-pressed="false">
         <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path class="i-play" d="M4 2.5v11l9-5.5z" fill="currentColor"></path><path class="i-pause" d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"></path></svg>
       </button>
@@ -305,6 +306,17 @@ const [line1, line2] = site.heroLine;
   .hero__plate figcaption {
     margin-top: 0.6rem;
   }
+  .hero__still {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border: 1px solid var(--line-strong);
+  }
+  :global(.no-js) .hero__plate .plate-btn {
+    display: none;
+  }
 
   .hero__cue {
     position: absolute;
@@ -340,7 +352,8 @@ const [line1, line2] = site.heroLine;
       transform-origin: bottom;
     }
   }
-  :global(.no-js) .hero__cue {
+  :global(.no-js) .hero__cue,
+  :global(.no-js) .hero__meta {
     display: none;
   }
 
