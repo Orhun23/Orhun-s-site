@@ -12,35 +12,18 @@ export default defineConfig({
   build: { inlineStylesheets: 'always' },
   integrations: [sitemap({ filter: (page) => !page.includes('/og') })],
   fonts: [
-    // Bricolage Grotesque, split into two optical sizes and subset (see README → Fonts):
-    // the display cut is what the hero headline needs first, so only that one is preloaded.
+    // Overused Grotesk (OFL, by RandomMaerks), subset to the characters the site uses,
+    // weights 400–900 in one variable file. Display and body.
     {
       provider: fontProviders.local(),
-      name: 'Bricolage Display',
+      name: 'Overused Grotesk',
       cssVariable: '--font-display',
       fallbacks: ['Arial', 'sans-serif'],
       options: {
         variants: [
           {
-            src: ['./src/assets/fonts/BricolageDisplay.woff2'],
-            weight: '400 800',
-            stretch: '90% 100%',
-            style: 'normal',
-            display: 'swap',
-          },
-        ],
-      },
-    },
-    {
-      provider: fontProviders.local(),
-      name: 'Bricolage Text',
-      cssVariable: '--font-text',
-      fallbacks: ['Arial', 'sans-serif'],
-      options: {
-        variants: [
-          {
-            src: ['./src/assets/fonts/BricolageText.woff2'],
-            weight: '400 800',
+            src: ['./src/assets/fonts/OverusedGrotesk.woff2'],
+            weight: '400 900',
             style: 'normal',
             display: 'swap',
           },

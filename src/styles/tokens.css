@@ -29,6 +29,7 @@
 
   /* type */
   /* --font-display / --font-mono come from Astro's <Font> (with metric-matched fallbacks) */
+  --font-text: var(--font-display);
   --step--2: clamp(0.69rem, 0.67rem + 0.08vw, 0.75rem); /* mono labels */
   --step--1: clamp(0.8rem, 0.77rem + 0.13vw, 0.875rem);
   --step-0: clamp(1rem, 0.96rem + 0.2vw, 1.125rem);
