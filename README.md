@@ -82,7 +82,7 @@ The import script turns raw phone photos (HEIC/JPG/PNG/Canon CR3) and videos int
    ```
 4. Use the image in a component or markdown file. Astro generates the AVIF/WebP sizes at build time.
 
-GPS is read *before* stripping, rounded to about 1 km, and written to `src/data/gps.json`. Copy coordinates from there if you want them on the site.
+GPS is read *before* stripping, rounded to about 1 km, and written to `src/data/gps.json` (git-ignored, it stays on your machine). Copy coordinates from there if you want them on the site.
 
 ## Regenerate the CV PDF, OG image and icons
 

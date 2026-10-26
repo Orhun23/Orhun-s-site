@@ -22,3 +22,6 @@ pnpm-debug.log*
 
 # jetbrains setting folder
 .idea/
+
+# photo GPS (place-level, but includes work sites) stays local
+src/data/gps.json
