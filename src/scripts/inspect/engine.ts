@@ -323,7 +323,8 @@ export function createExploded(o: ExplodedOptions): Exploded {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, width, height);
     ctx.lineCap = 'round';
-    compose(null, model.centre);
+    // ground + dims are in absolute model coords: translate by −centre like everything else
+    compose(null, [0, 0, 0]);
     stroke(groundF, groundF.length / 6, ink, 0.3);
     stroke(dimsF, Math.floor((dimsF.length / 6) * d), accent, 0.95);
 
