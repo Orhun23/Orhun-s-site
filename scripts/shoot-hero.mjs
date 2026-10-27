@@ -9,7 +9,7 @@ const [url, out] = args;
 const opt = (k, d) => (args.includes(k) ? args[args.indexOf(k) + 1] : d);
 const flag = (k) => args.includes(k);
 const w = Number(opt('--w', 1440));
-const h = { 1440: 900, 768: 1024, 390: 844 }[w] ?? 900;
+const h = Number(opt('--h', 0)) || ({ 1440: 900, 768: 1024, 390: 844, 360: 780, 430: 932 }[w] ?? 900);
 fs.mkdirSync(out, { recursive: true });
 const browser = await chromium.launch({ args: ['--autoplay-policy=no-user-gesture-required'] });
 const ctx = await browser.newContext({
@@ -23,7 +23,7 @@ const ctx = await browser.newContext({
 const page = await ctx.newPage();
 const errors = [];
 page.on('pageerror', (e) => errors.push(String(e)));
-const tag = `${w}${flag('--dark') ? '-dark' : ''}${flag('--reduced') ? '-rm' : ''}`;
+const tag = `${w}x${h}${flag('--dark') ? '-dark' : ''}${flag('--reduced') ? '-rm' : ''}`;
 const shot = (n) => page.screenshot({ path: path.join(out, `${tag}-${n}.png`) });
 await page.goto(url, { waitUntil: 'networkidle' });
 await page.waitForTimeout(1800);
@@ -48,10 +48,27 @@ if (w > 800) {
   await page.waitForTimeout(900);
   await shot('4-frames');
 } else {
-  await page.waitForTimeout(2200); // touch auto-develop
-  await shot('2-touch');
+  // idle: the ghost finger moves through the line, a frame lights up on its own
+  await page.waitForTimeout(3200);
+  await shot('2-idle');
+  // tap a frame in the upper half
+  await page.touchscreen.tap(w * 0.5, h * 0.25);
+  await page.waitForTimeout(700);
+  await shot('3-tap');
+  // drag a finger across the words (raw touch events)
+  const cdp = await ctx.newCDPSession(page);
+  const box = await page.$eval('[data-kinetic]', (el) => { const r = el.getBoundingClientRect(); return [r.x, r.y, r.width, r.height]; });
+  const ty = box[1] + box[3] * 0.62;
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: box[0] + 10, y: ty }] });
+  for (let i = 1; i <= 14; i++) {
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: box[0] + 10 + i * (box[2] * 0.045), y: ty }] });
+    await page.waitForTimeout(20);
+  }
+  await page.waitForTimeout(250);
+  await shot('4-drag');
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
 }
-await page.mouse.move(w - 5, h - 5);
+if (w > 800) await page.mouse.move(w - 5, h - 5);
 await page.evaluate(() => scrollTo(0, innerHeight * 0.35));
 await page.waitForTimeout(700);
 await shot('5-scroll35');
