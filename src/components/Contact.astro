@@ -85,6 +85,11 @@ import { person } from '../data/site';
       background-size: 100% 2px;
     }
   }
+  @media (hover: none) {
+    .contact__mail:global(.is-focus) .contact__addr {
+      background-size: 100% 2px;
+    }
+  }
   .contact__actions {
     display: flex;
     flex-wrap: wrap;
@@ -108,6 +113,17 @@ import { person } from '../data/site';
   .foot__block dd {
     text-transform: none;
     letter-spacing: 0;
+  }
+  /* phones: the address scales with the screen so it stays on one line */
+  @media (max-width: 560px) {
+    .contact__addr {
+      font-size: clamp(1.25rem, 6.9vw, 2rem);
+      overflow-wrap: normal;
+      white-space: nowrap;
+    }
+    .contact__title {
+      font-size: clamp(2.4rem, 11.5vw, 4rem);
+    }
   }
   @media (max-width: 960px) {
     .foot__block {

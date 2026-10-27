@@ -235,6 +235,11 @@ const d = build.data;
     }
   }
 
+  @media (hover: none) {
+    .bd__next:global(.is-focus) .bd__arrow {
+      transform: translateX(10px);
+    }
+  }
   .prose {
     font-size: var(--step-1);
     line-height: 1.55;
@@ -265,7 +270,10 @@ const d = build.data;
   @media (max-width: 860px) {
     .bd__main,
     .bd__gallery {
-      grid-template-columns: 1fr;
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .bd__spec div {
+      grid-template-columns: 11ch minmax(0, 1fr);
     }
     .bd__gallery :global(.is-wide) {
       grid-column: auto;
