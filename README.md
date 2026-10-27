@@ -1,6 +1,6 @@
 # orhun-site
 
-Personal site of Orhun Habib Erdogan. The whole thing is laid out as a set of engineering drawing sheets: a title block in the corner, part numbers, dimension lines. The hero draws Orhun as pen-plotter lines: hover to look closer, click for the next subject, scroll and the lines flatten onto the sheet's ruled grid. The builds section is an inspection bench where each build assembles itself as you scroll.
+Personal site of Orhun Habib Erdogan. The whole thing is laid out as a set of engineering drawing sheets: a title block in the corner, part numbers, dimension lines. The hero is a contact sheet of builds, boards and trips drifting up the paper, with the line in front of it: the letters react to the cursor, the frames light up when you go to them. The builds section is an inspection bench where each build assembles itself as you scroll.
 
 Astro + TypeScript, vanilla CSS with design tokens, Lenis for smooth scroll, plain 2D canvas for the line drawings. No animation library, no tracking.
 
@@ -27,7 +27,7 @@ npx astro check    # type check
 | Trips (Field log) | `src/data/trips.ts` |
 | Builds (one markdown file each) | `src/content/builds/*.md` |
 | Homepage sections | `src/components/*.astro` |
-| Hero ('Plotted') | `src/components/Hero.astro`, `src/scripts/hero/plotted.ts`; height maps from `scripts/media/make-plot.py` |
+| Hero (contact sheet + kinetic line) | `src/components/Hero.astro`, `src/scripts/hero/kinetic.ts`; edit the frames in the `raw` list at the top of Hero.astro |
 | Build line models (bench) | `src/scripts/inspect/models/*.ts` |
 | Photos (optimised, metadata stripped) | `src/assets/media/` |
 | Videos | `public/media/` |

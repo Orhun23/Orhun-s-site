@@ -1,5 +1,5 @@
 // Generates the static assets that are easier to render than to hand-make:
-//   public/og.png                       social card (from /og)
+//   public/og.png                       social card (the homepage hero at 1200×630)
 //   public/cv/orhun-habib-erdogan-cv.pdf  (from /cv, printed to A4)
 //   public/apple-touch-icon.png, public/favicon.ico (from favicon.svg)
 // Run with the dev or preview server up:  node scripts/make-assets.mjs [http://localhost:4321]
@@ -10,26 +10,20 @@ import sharp from 'sharp';
 const base = process.argv[2] ?? 'http://localhost:4321';
 const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
 
-// static hero drawing for visitors without JavaScript
+// OG image: the hero itself, at 1200×630, frames still, chrome hidden
 {
-  const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, colorScheme: 'light', reducedMotion: 'reduce' });
-  await page.goto(`${base}/`, { waitUntil: 'networkidle' });
-  await page.waitForSelector('.hero.is-live');
-  await page.waitForTimeout(400);
-  const data = await page.evaluate(() => document.querySelector('[data-hero-canvas]').toDataURL('image/png'));
-  fs.mkdirSync('public/media/hero', { recursive: true });
-  fs.writeFileSync('public/media/hero/plot-static.png', Buffer.from(data.split(',')[1], 'base64'));
-  await page.close();
-  console.log('public/media/hero/plot-static.png');
-}
-
-// OG image
-{
-  const page = await browser.newPage({ viewport: { width: 1200, height: 630 }, colorScheme: 'light' });
-  await page.goto(`${base}/og`, { waitUntil: 'networkidle' });
-  await page.evaluate(() => document.fonts.ready);
-  await page.waitForTimeout(800);
-  await page.locator('.og').screenshot({ path: 'public/og.png' });
+  const page = await browser.newPage({ viewport: { width: 1200, height: 630 }, colorScheme: 'light', reducedMotion: 'reduce' });
+  await page.goto(`${base}/`, { waitUntil: 'load' });
+  await page.addStyleTag({ content: '.header,.tb,.cur,.cur-trail,.hero__cue,.hero__hint{display:none!important}' });
+  // only the frames on screen matter; lazy ones further down never load, so don't wait for them
+  await page.evaluate(() =>
+    Promise.race([
+      Promise.all([...document.querySelectorAll('.hero img')].filter((i) => i.getBoundingClientRect().top < innerHeight).map((i) => ((i.loading = 'eager'), i.decode().catch(() => {})))),
+      new Promise((r) => setTimeout(r, 4000)),
+    ]),
+  );
+  await page.waitForTimeout(500);
+  await page.screenshot({ path: 'public/og.png' });
   await page.close();
   console.log('public/og.png');
 }

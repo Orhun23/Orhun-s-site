@@ -11,7 +11,7 @@ const mobile = args.includes('--mobile');
 const cpu = Number(args.includes('--cpu') ? args[args.indexOf('--cpu') + 1] : mobile ? 4 : 1);
 const out = args.includes('--out') ? args[args.indexOf('--out') + 1] : null;
 
-const browser = await chromium.launch({ args: ['--enable-gpu-rasterization'] });
+const browser = await chromium.launch({ args: process.env.GPU ? ['--enable-gpu', '--ignore-gpu-blocklist', '--use-angle=d3d11', '--enable-gpu-rasterization'] : ['--enable-gpu-rasterization'] });
 const ctx = await browser.newContext(
   mobile
     ? { viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true }
