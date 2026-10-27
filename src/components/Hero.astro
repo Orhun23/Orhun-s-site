@@ -1,118 +1,220 @@
 ---
-// "Plotted": Orhun drawn as pen-plotter lines (src/scripts/hero/plotted.ts). No headline:
-// the hero is something to look at and poke for a second. Scrolling flattens the lines onto
-// the sheet's ruled grid, which is the paper every section below sits on.
-import { person } from '../data/site';
-import subjects from '../data/plot.json';
+// The hero: a contact sheet of everything (builds, boards, trips) drifting up the paper, dimmed,
+// with the line sitting on the sheet in front of it. The type reacts to the cursor
+// (scripts/hero/kinetic.ts); the frames light up when you go to them. Scrolling lays the wall
+// flat and the first section takes over.
+import type { ImageMetadata } from 'astro';
+import { getImage } from 'astro:assets';
+import { site, person } from '../data/site';
+
+const m = import.meta.glob<{ default: ImageMetadata }>('../assets/media/**/*.jpg', { eager: true });
+const img = (p: string) => m[`../assets/media/${p}.jpg`].default;
+
+type Tile = { src: string; tag: string; label: string; video?: string };
+const raw: [string, string, string, string?][] = [
+  ['builds/tallbike/riding', 'B-01', 'Tallbike', '/media/builds/tallbike/riding.mp4'],
+  ['trips/rinjani-ridge', 'T-01', 'Rinjani 8.41°S'],
+  ['field/snow-jump', 'S-02', 'Snow', '/media/field/snow-jump.mp4'],
+  ['builds/helmet/clean', 'B-02', 'Iron Man helmet'],
+  ['trips/osaka-night', 'T-02', 'Osaka'],
+  ['field/skate-trocadero', 'S-01', 'Trocadéro', '/media/field/skate-trocadero.mp4'],
+  ['builds/xwing/clean', 'B-03', 'X-wing'],
+  ['trips/sahara', 'T-03', 'Sahara'],
+  ['builds/printer/printing', 'B-04', '3D printer', '/media/builds/printer/printing.mp4'],
+  ['field/surf', 'S-03', 'Surf, Lombok'],
+  ['trips/fuji-summit', 'T-02', 'Fuji 3776 m'],
+  ['builds/tallbike/welding', 'B-01', 'Welding', '/media/builds/tallbike/welding.mp4'],
+  ['field/skate-bowl-air', 'S-01', 'Taghazout bowl'],
+  ['trips/fogo', 'T-04', 'Fogo'],
+  ['builds/helmet/faceplate', 'B-02', 'Faceplate servo', '/media/builds/helmet/faceplate.mp4'],
+  ['field/backfull', 'S-04', 'Backfull', '/media/field/backfull.mp4'],
+  ['trips/jaipur-wall', 'T-05', 'Jaipur'],
+  ['builds/xwing/exploded', 'B-03', 'Exploded view'],
+  ['field/snow-spray', 'S-02', 'Powder'],
+  ['trips/todra-gorge', 'T-03', 'Todra gorge'],
+  ['trips/whale-shark', 'T-01', 'Whale shark', '/media/trips/whale-shark.mp4'],
+  ['builds/printer/frame-cad', 'B-04', 'Frame CAD'],
+  ['trips/black-beach', 'T-04', 'Black beach'],
+  ['builds/tallbike/jig', 'B-01', 'On the jig'],
+];
+const tiles: Tile[] = await Promise.all(
+  raw.map(async ([path, tag, label, video]) => {
+    const r = await getImage({ src: img(path), width: 300, height: 375, fit: 'cover', format: 'webp', quality: 62 });
+    return { src: r.src, tag, label, video };
+  }),
+);
+const COLS = 6;
+// columns drift at their own speed; each list is repeated so the loop is seamless
+const cols = Array.from({ length: COLS }, (_, c) => tiles.filter((_, i) => i % COLS === c));
+
+const [line1, line2] = site.heroLine;
+const words = (line: string) => line.split(' ');
 ---
 
-<section id="top" class="hero" data-sheet="01" data-sheet-title="General arrangement" data-hero>
+<section id="top" class="hero" data-hero data-sheet="01" data-sheet-title="General arrangement">
   <div class="hero__stage" data-hero-stage>
-    <canvas class="hero__canvas" data-hero-canvas aria-hidden="true"></canvas>
-    <noscript><img class="hero__static" src="/media/hero/plot-static.png" alt="" /></noscript>
+    <div class="wall" data-wall aria-hidden="true">
+      {
+        cols.map((col, c) => (
+          <div class="wall__col" style={`--d:${46 + ((c * 7) % 5) * 6}s;--o:${-((c * 37) % 100) / 100}`}>
+            <div class="wall__track">
+              {[...col, ...col, ...col, ...col].map((t, i) => (
+                <figure class="tile" data-video={t.video}>
+                  <img
+                    src={t.src}
+                    alt=""
+                    width="300"
+                    height="375"
+                    loading={i < 2 ? 'eager' : 'lazy'}
+                    fetchpriority={i < 2 ? 'high' : undefined}
+                    decoding="async"
+                  />
+                  <figcaption class="mono">
+                    <span class="accent">{t.tag}</span> {t.label}
+                  </figcaption>
+                </figure>
+              ))}
+            </div>
+          </div>
+        ))
+      }
+    </div>
+    <div class="hero__veil" aria-hidden="true"></div>
 
-    <h1 class="visually-hidden">{person.name}, {person.role.toLowerCase()} in {person.base}</h1>
-
-    <div class="hero__meta mono">
-      <span><span class="accent">Fig. 01</span> — {person.initials}, plotted <span class="mono-meta">· {person.coords}</span></span>
-      <button class="hero__next mono" type="button" data-hero-next aria-label="Show the next drawing">
-        <span class="mono-meta">Subject</span>
-        <span data-hero-count>01</span><span class="mono-meta">/{String(subjects.length).padStart(2, '0')}</span>
-        <span data-hero-label>{subjects[0].label}</span>
-        <span class="hero__arrow" aria-hidden="true">→</span>
-      </button>
+    <div class="hero__copy" data-hero-copy>
+      <p class="hero__who mono">
+        <span>{person.name}</span>
+        <span class="mono-meta">— {person.role}, {person.base} · {person.coords}</span>
+      </p>
+      <h1 class="hero__title display" data-kinetic>
+        <span class="visually-hidden">{line1} {line2}</span>
+        {
+          [line1, line2].map((line) => (
+            <span class="hero__line" data-k-line aria-hidden="true">
+              {words(line).map((w) => (
+                <span class="hero__word">
+                  {[...w].map((ch) => (
+                    <span class="k" data-k>
+                      <span class="k__b">{ch}</span>
+                      <span class="k__a">{ch}</span>
+                    </span>
+                  ))}
+                </span>
+              ))}
+            </span>
+          ))
+        }
+      </h1>
+      <p class="hero__hint mono mono-meta" aria-hidden="true">
+        <span class="hint-fine">Move over the frames to light them up</span>
+      </p>
     </div>
 
-    <p class="hero__hint mono mono-meta" aria-hidden="true">
-      <span class="hint-fine">Move to look closer · click for the next one</span>
-      <span class="hint-touch">Touch to look closer · tap for the next one</span>
-    </p>
-    <a class="hero__cue mono" href="#status">
-      <span class="hero__cue-line" aria-hidden="true"></span>
-      Scroll
-    </a>
+    <a class="hero__cue mono" href="#status">↓ Scroll</a>
   </div>
 </section>
 
 <script>
-  import { reducedMotion, cssVar, swapText } from '../scripts/env';
-  import subjects from '../data/plot.json';
+  import { reducedMotion, finePointer } from '../scripts/env';
+  import { createKinetic } from '../scripts/hero/kinetic';
 
   const section = document.querySelector<HTMLElement>('[data-hero]')!;
   const stage = section.querySelector<HTMLElement>('[data-hero-stage]')!;
-  const canvas = section.querySelector<HTMLCanvasElement>('[data-hero-canvas]')!;
-  const btn = section.querySelector<HTMLButtonElement>('[data-hero-next]')!;
-  const countEl = section.querySelector<HTMLElement>('[data-hero-count]')!;
-  const labelEl = section.querySelector<HTMLElement>('[data-hero-label]')!;
+  const wall = section.querySelector<HTMLElement>('[data-wall]')!;
+  const copy = section.querySelector<HTMLElement>('[data-hero-copy]')!;
+  const title = section.querySelector<HTMLElement>('[data-kinetic]')!;
   const reduced = reducedMotion();
+  const fine = finePointer();
 
-  (async () => {
-    const { createPlotted } = await import('../scripts/hero/plotted');
-    const p = await createPlotted({
-      canvas,
-      subjects,
-      reduced,
-      colors: () => ({ ink: cssVar('--ink'), accent: cssVar('--accent'), bg: cssVar('--bg') }),
-      onSubject: (i) => {
-        swapText(countEl, String(i + 1).padStart(2, '0'));
-        swapText(labelEl, subjects[i].label);
-      },
-    });
-    section.classList.add('is-live');
+  // one shared <video>, moved into whichever clip tile is lit: never more than one decoding
+  const player = document.createElement('video');
+  player.muted = true;
+  player.loop = true;
+  player.playsInline = true;
+  player.className = 'tile__vid';
+  let active: HTMLElement | null = null;
+  const activate = (tile: HTMLElement | null) => {
+    if (tile === active) return;
+    active?.classList.remove('is-on');
+    active = tile;
+    stage.classList.toggle('is-looking', !!tile);
+    if (!tile) {
+      player.pause();
+      player.remove();
+      return;
+    }
+    tile.classList.add('is-on');
+    const v = tile.dataset.video;
+    if (v && !reduced) {
+      if (!player.src.endsWith(v)) player.src = v;
+      tile.appendChild(player);
+      player.play().catch(() => {});
+    } else {
+      player.pause();
+      player.remove();
+    }
+  };
 
-    new ResizeObserver(() => p.resize()).observe(stage);
-    const recolor = () => p.recolor();
-    addEventListener('themechange', recolor);
-    matchMedia('(prefers-color-scheme: dark)').addEventListener('change', recolor);
-    new IntersectionObserver(([e]) => p.setActive(e.isIntersecting)).observe(section);
-
-    // mouse: the lens follows the pointer; a click anywhere on the drawing is "next"
-    const local = (e: { clientX: number; clientY: number }) => {
-      const r = canvas.getBoundingClientRect();
-      return [e.clientX - r.left, e.clientY - r.top] as const;
-    };
+  // the line reacts to the cursor; over the line the frames stay dim so the type leads
+  const kinetic = fine && !reduced ? createKinetic(title) : null;
+  if (fine) {
+    let overText = false;
     stage.addEventListener('pointermove', (e) => {
       if (e.pointerType !== 'mouse') return;
-      // over the controls it's a pointer, not a lens
-      if ((e.target as Element).closest('a, button')) p.lensOff();
-      else p.lens(...local(e));
+      kinetic?.move(e.clientX, e.clientY);
+      const r = copy.getBoundingClientRect();
+      overText = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+      if (overText) activate(null);
     });
-    stage.addEventListener('pointerleave', () => p.lensOff());
-    stage.addEventListener('click', (e) => {
-      if ((e.target as Element).closest('a, button')) return;
-      p.next();
+    wall.addEventListener('pointerover', (e) => {
+      if (overText) return;
+      activate((e.target as Element).closest<HTMLElement>('.tile'));
     });
-    btn.addEventListener('click', () => p.next());
+    stage.addEventListener('pointerleave', () => {
+      activate(null);
+      kinetic?.leave();
+    });
+  } else if (!reduced) {
+    // touch: no hover, so every so often a frame in the upper half develops on its own
+    let i = 0;
+    setInterval(() => {
+      if (section.classList.contains('is-off') || scrollY > innerHeight * 0.3) return;
+      const x = innerWidth * (0.3 + 0.4 * (i++ % 2)),
+        y = innerHeight * (0.22 + 0.1 * (i % 3));
+      activate(document.elementFromPoint(x, y)?.closest<HTMLElement>('.tile') ?? null);
+    }, 1800);
+  }
 
-    // touch: the lens sits under the finger while it's down; scrolling still works
-    let lift = 0;
-    stage.addEventListener(
-      'touchmove',
-      (e) => {
-        clearTimeout(lift);
-        p.lens(...local(e.touches[0]));
-      },
-      { passive: true },
-    );
-    stage.addEventListener('touchstart', (e) => p.lens(...local(e.touches[0])), { passive: true });
-    stage.addEventListener('touchend', () => (lift = window.setTimeout(() => p.lensOff(), 350)), { passive: true });
-
-    // scroll through the sticky hero flattens the drawing onto the grid
-    if (!reduced) {
-      let ticking = false;
-      const onScroll = () => {
+  // scroll: the wall lays flat and dims, the line slides up and out (transform/opacity only)
+  if (!reduced) {
+    let ticking = false;
+    addEventListener(
+      'scroll',
+      () => {
         if (ticking) return;
         ticking = true;
         requestAnimationFrame(() => {
           ticking = false;
           const r = section.getBoundingClientRect();
-          p.setScroll(-r.top / Math.max(1, r.height - innerHeight));
+          const p = Math.min(1, Math.max(0, -r.top / Math.max(1, r.height - innerHeight)));
+          // written straight to the wall: a custom property here would restyle every frame inside it
+          wall.style.transform = p
+            ? `rotateX(${(26 * (1 - p)).toFixed(2)}deg) rotateZ(${(-6 * (1 - p)).toFixed(2)}deg) translateY(${(-12 * p).toFixed(2)}%) scale(${(1 - p * 0.08).toFixed(4)})`
+            : '';
+          wall.style.opacity = p ? (1 - p * 0.75).toFixed(3) : '';
+          copy.style.transform = p ? `translate3d(0, ${(-p * 80).toFixed(1)}px, 0)` : '';
+          copy.style.opacity = p ? String(Math.max(0, 1 - p * 1.8)) : '';
+          if (p > 0.05 && active) activate(null);
         });
-      };
-      addEventListener('scroll', onScroll, { passive: true });
-      onScroll();
-    }
-  })();
+      },
+      { passive: true },
+    );
+  }
+  // offscreen: stop the drift and the type loop
+  new IntersectionObserver(([e]) => {
+    section.classList.toggle('is-off', !e.isIntersecting);
+    kinetic?.setActive(e.isIntersecting);
+  }).observe(section);
 </script>
 
 <style>
@@ -121,139 +223,205 @@ import subjects from '../data/plot.json';
     height: 100svh;
   }
   :global(.js) .hero {
-    height: 175svh;
+    height: 145svh;
   }
   .hero__stage {
     position: sticky;
     top: 0;
     height: 100svh;
-    min-height: 520px;
+    min-height: 560px;
     overflow: hidden;
-    cursor: crosshair;
-    touch-action: pan-y;
+    perspective: 1400px;
   }
-  .hero__canvas,
-  .hero__static {
+
+  /* ---- the wall ---- */
+  .wall {
+    position: absolute;
+    inset: -30% -8% -30% -8%;
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: clamp(10px, 1.4vw, 22px);
+    padding-inline: 2vw;
+    transform: rotateX(26deg) rotateZ(-6deg);
+    transform-origin: 50% 40%;
+    will-change: transform;
+  }
+  .wall__track {
+    display: grid;
+    gap: clamp(10px, 1.4vw, 22px);
+    animation: drift var(--d) linear infinite;
+    animation-delay: calc(var(--d) * var(--o));
+  }
+  .hero.is-off .wall__track {
+    animation-play-state: paused;
+  }
+  @keyframes drift {
+    to {
+      transform: translateY(-50%);
+    }
+  }
+  .tile {
+    position: relative;
+    margin: 0;
+    aspect-ratio: 4 / 5;
+    background: var(--bg-raised);
+  }
+  .tile img,
+  .tile :global(.tile__vid) {
     position: absolute;
     inset: 0;
     width: 100%;
     height: 100%;
-  }
-  .hero__static {
     object-fit: cover;
   }
-
-  .hero__meta {
+  /* dim by default so the line leads; the wall comes up when you go to it, the frame under
+     the cursor develops into full colour */
+  .tile img {
+    filter: grayscale(1) contrast(1.05);
+    opacity: 0.38;
+    transition:
+      filter 450ms ease,
+      opacity 450ms ease;
+  }
+  .hero__stage.is-looking .tile img {
+    opacity: 0.6;
+  }
+  .hero__stage.is-looking .tile.is-on img,
+  .tile.is-on img {
+    filter: none;
+    opacity: 1;
+  }
+  .tile figcaption {
     position: absolute;
-    top: calc(var(--frame) + 4.4rem);
+    left: 0;
+    top: 100%;
+    margin-top: 4px;
+    font-size: 9px;
+    white-space: nowrap;
+    color: var(--ink-3);
+    opacity: 0.6;
+    transition: opacity 300ms ease;
+  }
+  .tile.is-on figcaption {
+    color: var(--ink);
+    opacity: 1;
+  }
+  .tile.is-on {
+    outline: 1px solid var(--accent);
+    outline-offset: 3px;
+  }
+
+  /* the paper comes up from the bottom-left, under the line: the wall drifts out of it */
+  .hero__veil {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(
+      to top,
+      var(--bg) 0%,
+      color-mix(in srgb, var(--bg) 82%, transparent) 26%,
+      color-mix(in srgb, var(--bg) 0%, transparent) 62%
+    );
+  }
+
+  /* ---- the line ---- */
+  .hero__copy {
+    position: absolute;
     left: calc(var(--frame) + var(--gutter));
     right: calc(var(--frame) + var(--gutter));
+    bottom: calc(var(--frame) + 3.4rem);
+    pointer-events: none;
+  }
+  .hero__who {
     display: flex;
     flex-wrap: wrap;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: 0.5rem 1rem;
+    gap: 0.2rem 0.6rem;
+    margin-bottom: 1.2rem;
   }
-  .hero__next {
-    display: inline-flex;
-    align-items: baseline;
-    gap: 0.45em;
-    padding: 0.35rem 0;
-    color: var(--ink);
+  .hero__title {
+    font-size: clamp(2.6rem, 6.9vw, 8rem);
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 0.92;
   }
-  .hero__arrow {
-    color: var(--accent-text);
-    transition: transform var(--dur-ui) var(--ease-out);
+  .hero__line {
+    display: block;
+    white-space: nowrap;
   }
-  @media (hover: hover) and (pointer: fine) {
-    .hero__next:hover .hero__arrow {
-      transform: translateX(5px);
-    }
+  .hero__word {
+    display: inline-block;
+    white-space: nowrap;
   }
-
-  .hero__hint {
+  /* the gap trails each word, so a wrapped line starts flush */
+  .hero__word:not(:last-child) {
+    margin-right: 0.24em;
+  }
+  .k {
+    position: relative;
+    display: inline-block;
+    transform-origin: 50% 60%;
+  }
+  .k__a,
+  .k__b {
+    display: inline-block;
+  }
+  /* the same glyph as a drawing: thin outline underneath the solid one */
+  .k__b {
     position: absolute;
-    left: calc(var(--frame) + var(--gutter));
-    bottom: calc(var(--frame) + 1.1rem);
+    left: 0;
+    top: 0;
+    color: transparent;
+    -webkit-text-stroke: 1px var(--ink);
+  }
+  .hero__hint {
+    margin-top: 1rem;
     font-size: 10px;
   }
-  .hint-touch {
-    display: none;
-  }
   @media (hover: none) {
-    .hint-fine {
+    .hero__hint {
       display: none;
     }
-    .hint-touch {
-      display: inline;
-    }
-  }
-  :global(.no-js) .hero__hint,
-  :global(.no-js) .hero__next {
-    display: none;
   }
 
   .hero__cue {
     position: absolute;
-    left: 50%;
-    bottom: calc(var(--frame) + 2.6rem);
-    transform: translateX(-50%);
-    display: grid;
-    justify-items: center;
-    gap: 0.5rem;
+    right: calc(var(--frame) + var(--gutter));
+    bottom: calc(var(--frame) + 3.4rem);
     text-decoration: none;
     font-size: 10px;
     color: var(--accent-text);
-    padding: 0.4rem 0.6rem;
-    background: var(--bg);
-  }
-  .hero__cue-line {
-    width: 1px;
-    height: 28px;
-    background: var(--accent);
-    transform-origin: top;
-    animation: cue 2.2s var(--ease-in-out) 1.8s infinite both;
-  }
-  @keyframes cue {
-    0% {
-      transform: scaleY(0);
-      transform-origin: top;
-    }
-    45% {
-      transform: scaleY(1);
-      transform-origin: top;
-    }
-    55% {
-      transform: scaleY(1);
-      transform-origin: bottom;
-    }
-    100% {
-      transform: scaleY(0);
-      transform-origin: bottom;
-    }
   }
 
-  /* the title block grows wide on tablets: keep the hint above it */
-  @media (max-width: 1100px) {
-    .hero__hint {
-      bottom: calc(var(--frame) + 2.6rem);
-    }
-  }
   @media (max-width: 760px) {
-    .hero__meta {
-      top: calc(var(--frame) + 3.6rem);
+    .wall {
+      grid-template-columns: repeat(3, 1fr);
+      inset: -30% -20% -30% -20%;
     }
-    .hero__meta > span:first-child .mono-meta {
+    .wall__col:nth-child(n + 4) {
       display: none;
     }
-    .hero__hint {
-      left: 50%;
-      transform: translateX(-50%);
-      white-space: nowrap;
-      bottom: calc(var(--frame) + 2.6rem);
+    .hero__line {
+      white-space: normal;
+    }
+    .hero__title {
+      font-size: clamp(2.4rem, 11.5vw, 4.2rem);
+    }
+    .hero__copy {
+      bottom: calc(var(--frame) + 2.8rem);
+    }
+    .hero__who .mono-meta {
+      flex-basis: 100%;
     }
     .hero__cue {
       display: none;
+    }
+    .hero__veil {
+      background: linear-gradient(
+        to top,
+        var(--bg) 0%,
+        color-mix(in srgb, var(--bg) 85%, transparent) 38%,
+        color-mix(in srgb, var(--bg) 0%, transparent) 70%
+      );
     }
   }
 
@@ -261,7 +429,7 @@ import subjects from '../data/plot.json';
     :global(.js) .hero {
       height: 100svh;
     }
-    .hero__cue-line {
+    .wall__track {
       animation: none;
     }
   }

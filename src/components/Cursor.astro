@@ -121,14 +121,14 @@
     addEventListener('pointerdown', () => el.classList.add('is-down'));
     addEventListener('pointerup', () => el.classList.remove('is-down'));
 
-    // hover: anything clickable opens the dot into a ring (the hero drawing has its own lens)
+    // hover: anything clickable opens the dot into a ring
     const CLICKABLE = 'a, button, [role="tab"], summary, label, [data-plate], [data-insp-view]';
     let current = '';
     addEventListener(
       'pointerover',
       (e) => {
         const t = e.target as Element;
-        const state = t.closest(CLICKABLE) ? 'link' : t.closest('[data-hero-stage] canvas') ? 'lens' : '';
+        const state = t.closest(CLICKABLE) ? 'link' : '';
         if (state === current) return;
         current = state;
         el.dataset.state = state;
@@ -207,10 +207,6 @@
   }
   .cur[data-state='link'] .cur__dot {
     transform: scale(0.5);
-  }
-  /* hero: the drawing has its own lens, so the pen shrinks to a point */
-  .cur[data-state='lens'] .cur__dot {
-    transform: scale(0.6);
   }
   /* press */
   .cur.is-down[data-state='link'] .cur__ring {
