@@ -10,7 +10,7 @@ export default defineConfig({
   devToolbar: { enabled: false },
   // small site, one CSS bundle: inlining removes a render-blocking request
   build: { inlineStylesheets: 'always' },
-  integrations: [sitemap({ filter: (page) => !page.includes('/og') })],
+  integrations: [sitemap({ filter: (page) => !page.includes('/og') && !page.includes('/hero-') })],
   fonts: [
     // Overused Grotesk (OFL, by RandomMaerks), subset to the characters the site uses,
     // weights 400–900 in one variable file. Display and body.

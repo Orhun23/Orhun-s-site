@@ -1,0 +1,41 @@
+{
+ "seg": 1.1,
+ "cuts": [
+  {
+   "label": "Skate",
+   "where": "Trocadéro · 48.86°N 2.29°E"
+  },
+  {
+   "label": "Tallbike · welding",
+   "where": "Uni workshop · Eindhoven"
+  },
+  {
+   "label": "Snow",
+   "where": "Alps · 47.33°N 12.36°E"
+  },
+  {
+   "label": "Own 3D printer",
+   "where": "CoreXY · Klipper"
+  },
+  {
+   "label": "Whale shark",
+   "where": "Lombok · 8.41°S 116.46°E"
+  },
+  {
+   "label": "Iron Man helmet",
+   "where": "360° servo · 1 while loop"
+  },
+  {
+   "label": "Backfull",
+   "where": "Cape Verde · 14.95°N 24.34°W"
+  },
+  {
+   "label": "Tallbike · test ride",
+   "where": "Eindhoven · 51.44°N 5.47°E"
+  },
+  {
+   "label": "Skate",
+   "where": "Indoor park"
+  }
+ ]
+}
