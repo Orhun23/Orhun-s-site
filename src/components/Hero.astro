@@ -246,7 +246,7 @@ const words = (line: string) => line.split(' ');
       activate(tileAt(x, y));
     }, 2200);
     new IntersectionObserver(([e]) => e.isIntersecting && wake()).observe(section);
-    addEventListener('scroll', () => scrollY <= 4 && wake(), { passive: true });
+    addEventListener('scroll', () => !section.classList.contains('is-off') && scrollY <= 4 && wake(), { passive: true });
   }
 
   // the tall layout tilts the wall less (matches the CSS below)
@@ -255,15 +255,17 @@ const words = (line: string) => line.split(' ');
     tiltZ = tall ? -4 : -6;
 
   // scroll: the wall lays flat and dims, the line slides up and out (transform/opacity only)
+  let refresh = () => {};
   if (!reduced) {
     let ticking = false;
     addEventListener(
       'scroll',
-      () => {
+      (refresh = () => {
         if (ticking) return;
         ticking = true;
         requestAnimationFrame(() => {
           ticking = false;
+          if (section.classList.contains('is-off')) return; // scrolled past: nothing to move
           const r = section.getBoundingClientRect();
           const p = Math.min(1, Math.max(0, -r.top / Math.max(1, r.height - innerHeight)));
           // written straight to the wall: a custom property here would restyle every frame inside it
@@ -276,15 +278,20 @@ const words = (line: string) => line.split(' ');
           if (tall && cue) cue.style.opacity = p ? String(Math.max(0, 1 - p * 3)) : '';
           if (p > 0.05 && active) activate(null);
         });
-      },
+      }),
       { passive: true },
     );
   }
   // offscreen: stop the drift and the type loop
-  new IntersectionObserver(([e]) => {
-    section.classList.toggle('is-off', !e.isIntersecting);
-    kinetic?.setActive(e.isIntersecting);
-  }).observe(section);
+  new IntersectionObserver(
+    ([e]) => {
+      section.classList.toggle('is-off', !e.isIntersecting);
+      kinetic?.setActive(e.isIntersecting);
+      // back in view (maybe after a jump): catch up with where the scroll is now
+      if (e.isIntersecting) refresh();
+    },
+    { rootMargin: '25% 0px' },
+  ).observe(section);
 </script>
 
 <style>
@@ -324,6 +331,10 @@ const words = (line: string) => line.split(' ');
   }
   .hero.is-off .wall__track {
     animation-play-state: paused;
+  }
+  /* well out of view: the wall's layers stop costing the rest of the page anything */
+  .hero.is-off .hero__stage {
+    visibility: hidden;
   }
   @keyframes drift {
     to {
