@@ -56,6 +56,16 @@ import whalePoster from '../assets/media/trips/whale-shark.jpg';
           meta="Real speed: ≈ 0.7 s in the air"
         />
       </div>
+      <div class="board board--pool">
+        <Plate
+          src="/media/field/backfull.mp4"
+          webm="/media/field/backfull.webm"
+          poster={backfullPoster}
+          alt="Orhun doing a backflip with a full twist off the edge of a pool, landing in turquoise water"
+          fig="Fig. 04"
+          caption="Pool"
+        />
+      </div>
       <div class="board board--surf">
         <Annotated
           src={surf}
@@ -65,34 +75,11 @@ import whalePoster from '../assets/media/trips/whale-shark.jpg';
           meta="Lombok, Indonesia · Aug 2025"
           callouts={[
             { at: [46, 52], label: 'Operator, upright (for now)', dir: 'left' },
-            { at: [70, 32], label: 'Wave: bigger than it looks', dir: 'right' },
+            { at: [70, 32], label: 'Wave: bigger than it looks', dir: 'left' },
           ]}
           sizes="(max-width: 760px) 100vw, 45vw"
         />
       </div>
-    </div>
-
-    <!-- the backfull, just the clip -->
-    <div class="study">
-      <div class="study__text">
-        <p class="mono"><span class="accent">Fig. 04</span> — Cape Verde, Sep 2026</p>
-        <h3 class="study__title display" data-reveal>Backfull.</h3>
-        <p class="study__body" data-reveal style="--i:1">
-          A backflip with a full twist, into a pool, on the first trip after the job ended.
-        </p>
-        <dl class="study__spec mono" data-reveal style="--i:2">
-          <div><dt class="mono-meta">Airtime</dt><dd>≈ 0.9 s</dd></div>
-          <div><dt class="mono-meta">Rotation</dt><dd>360° back + 360° twist</dd></div>
-          <div><dt class="mono-meta">Landing</dt><dd>Wet</dd></div>
-        </dl>
-      </div>
-      <Plate
-        class="study__video"
-        src="/media/field/backfull.mp4"
-        webm="/media/field/backfull.webm"
-        poster={backfullPoster}
-        alt="Orhun doing a backflip with a full twist off the edge of a pool in Cape Verde, landing in turquoise water"
-      />
     </div>
 
     <!-- the bowl in Taghazout: a two-frame sequence -->
@@ -225,46 +212,17 @@ import whalePoster from '../assets/media/trips/whale-shark.jpg';
     margin-bottom: var(--space-l);
     color: var(--ink-2);
   }
-  .study {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 360px);
-    justify-content: space-between;
-    gap: var(--space-l) clamp(2rem, 5vw, 5rem);
-    align-items: center;
-    margin-top: var(--space-xl);
-  }
-  .study__title {
-    font-size: var(--step-3);
-    margin-block: 0.6rem 1rem;
-  }
-  .study__body {
-    color: var(--ink-2);
-    max-width: 40ch;
-  }
-  .study__spec {
-    max-width: 26rem;
-    margin-top: var(--space-m);
-    border-top: 1px solid var(--line-strong);
-  }
-  .study__spec div {
-    display: grid;
-    grid-template-columns: 11ch 1fr;
-    gap: 1rem;
-    padding: 0.45rem 0;
-    border-bottom: 1px solid var(--line);
-  }
-  .study__spec dd {
-    text-transform: none;
-    letter-spacing: 0;
-  }
   .boards {
     display: grid;
-    grid-template-columns: 1fr 1fr 2fr;
+    grid-template-columns: 1fr 1fr 1fr 2fr;
     gap: clamp(1rem, 2.5vw, 2.5rem);
     align-items: end;
   }
   .board--skate {
     margin-bottom: 18%;
+  }
+  .board--pool {
+    margin-bottom: 9%;
   }
 
   .seq {
@@ -372,21 +330,27 @@ import whalePoster from '../assets/media/trips/whale-shark.jpg';
 
   @media (max-width: 960px) {
     .boards {
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: repeat(3, 1fr);
     }
     .board--surf {
       grid-column: 1 / -1;
     }
-    .board--skate {
+    .board--skate,
+    .board--pool {
       margin-bottom: 0;
     }
   }
   @media (max-width: 860px) {
-    .study {
-      grid-template-columns: 1fr;
-    }
-    .study :global(.study__video) {
-      width: min(100%, 340px);
+    /* phones: two videos per row, the third centred under them */
+    @media (max-width: 560px) {
+      .boards {
+        grid-template-columns: 1fr 1fr;
+      }
+      .board--pool {
+        grid-column: 1 / -1;
+        width: calc(50% - clamp(0.5rem, 1.25vw, 1.25rem));
+        justify-self: center;
+      }
     }
     .field__intro,
     .trip {
