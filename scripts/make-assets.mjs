@@ -10,6 +10,19 @@ import sharp from 'sharp';
 const base = process.argv[2] ?? 'http://localhost:4321';
 const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
 
+// static hero drawing for visitors without JavaScript
+{
+  const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, colorScheme: 'light', reducedMotion: 'reduce' });
+  await page.goto(`${base}/`, { waitUntil: 'networkidle' });
+  await page.waitForSelector('.hero.is-live');
+  await page.waitForTimeout(400);
+  const data = await page.evaluate(() => document.querySelector('[data-hero-canvas]').toDataURL('image/png'));
+  fs.mkdirSync('public/media/hero', { recursive: true });
+  fs.writeFileSync('public/media/hero/plot-static.png', Buffer.from(data.split(',')[1], 'base64'));
+  await page.close();
+  console.log('public/media/hero/plot-static.png');
+}
+
 // OG image
 {
   const page = await browser.newPage({ viewport: { width: 1200, height: 630 }, colorScheme: 'light' });

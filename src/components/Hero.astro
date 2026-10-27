@@ -1,221 +1,268 @@
 ---
-// A calm, type-led hero. The motion is the arrival: on the first visit of a session the sheet
-// draws itself (Intro.astro), then this settles in and stays still. One orange dimension line
-// measures the headline and drops down as the cue to scroll.
-import { site, person } from '../data/site';
-
-const [line1, line2] = site.heroLine;
+// "Plotted": Orhun drawn as pen-plotter lines (src/scripts/hero/plotted.ts). No headline:
+// the hero is something to look at and poke for a second. Scrolling flattens the lines onto
+// the sheet's ruled grid, which is the paper every section below sits on.
+import { person } from '../data/site';
+import subjects from '../data/plot.json';
 ---
 
-<section id="top" class="hero" data-sheet="01" data-sheet-title="General arrangement">
-  <div class="hero__meta mono">
-    <span><span class="accent">Fig. 01</span> — General arrangement</span>
-    <span class="mono-meta hero__where">{person.base} · {person.coords} · <time data-clock>--:--</time></span>
-  </div>
+<section id="top" class="hero" data-sheet="01" data-sheet-title="General arrangement" data-hero>
+  <div class="hero__stage" data-hero-stage>
+    <canvas class="hero__canvas" data-hero-canvas aria-hidden="true"></canvas>
+    <noscript><img class="hero__static" src="/media/hero/plot-static.png" alt="" /></noscript>
 
-  <div class="hero__body">
-    <p class="hero__who mono">
-      <span>{person.name}</span>
-      <span class="mono-meta">— {person.role}</span>
+    <h1 class="visually-hidden">{person.name}, {person.role.toLowerCase()} in {person.base}</h1>
+
+    <div class="hero__meta mono">
+      <span><span class="accent">Fig. 01</span> — {person.initials}, plotted <span class="mono-meta">· {person.coords}</span></span>
+      <button class="hero__next mono" type="button" data-hero-next aria-label="Show the next drawing">
+        <span class="mono-meta">Subject</span>
+        <span data-hero-count>01</span><span class="mono-meta">/{String(subjects.length).padStart(2, '0')}</span>
+        <span data-hero-label>{subjects[0].label}</span>
+        <span class="hero__arrow" aria-hidden="true">→</span>
+      </button>
+    </div>
+
+    <p class="hero__hint mono mono-meta" aria-hidden="true">
+      <span class="hint-fine">Move to look closer · click for the next one</span>
+      <span class="hint-touch">Touch to look closer · tap for the next one</span>
     </p>
-    <h1 class="hero__title display">
-      <span class="hero__line">{line1}</span>
-      <span class="hero__line">{line2}</span>
-    </h1>
-    <a class="dimline" href="#status">
-      <span class="dimline__h" aria-hidden="true"></span>
-      <span class="dimline__label mono">
-        <span aria-hidden="true">↓</span> 6 sheets · scroll
-      </span>
+    <a class="hero__cue mono" href="#status">
+      <span class="hero__cue-line" aria-hidden="true"></span>
+      Scroll
     </a>
   </div>
-
-  <span class="hero__drop" aria-hidden="true"><span class="hero__pulse"></span></span>
 </section>
+
+<script>
+  import { reducedMotion, cssVar, swapText } from '../scripts/env';
+  import subjects from '../data/plot.json';
+
+  const section = document.querySelector<HTMLElement>('[data-hero]')!;
+  const stage = section.querySelector<HTMLElement>('[data-hero-stage]')!;
+  const canvas = section.querySelector<HTMLCanvasElement>('[data-hero-canvas]')!;
+  const btn = section.querySelector<HTMLButtonElement>('[data-hero-next]')!;
+  const countEl = section.querySelector<HTMLElement>('[data-hero-count]')!;
+  const labelEl = section.querySelector<HTMLElement>('[data-hero-label]')!;
+  const reduced = reducedMotion();
+
+  (async () => {
+    const { createPlotted } = await import('../scripts/hero/plotted');
+    const p = await createPlotted({
+      canvas,
+      subjects,
+      reduced,
+      colors: () => ({ ink: cssVar('--ink'), accent: cssVar('--accent'), bg: cssVar('--bg') }),
+      onSubject: (i) => {
+        swapText(countEl, String(i + 1).padStart(2, '0'));
+        swapText(labelEl, subjects[i].label);
+      },
+    });
+    section.classList.add('is-live');
+
+    new ResizeObserver(() => p.resize()).observe(stage);
+    const recolor = () => p.recolor();
+    addEventListener('themechange', recolor);
+    matchMedia('(prefers-color-scheme: dark)').addEventListener('change', recolor);
+    new IntersectionObserver(([e]) => p.setActive(e.isIntersecting)).observe(section);
+
+    // mouse: the lens follows the pointer; a click anywhere on the drawing is "next"
+    const local = (e: { clientX: number; clientY: number }) => {
+      const r = canvas.getBoundingClientRect();
+      return [e.clientX - r.left, e.clientY - r.top] as const;
+    };
+    stage.addEventListener('pointermove', (e) => {
+      if (e.pointerType !== 'mouse') return;
+      // over the controls it's a pointer, not a lens
+      if ((e.target as Element).closest('a, button')) p.lensOff();
+      else p.lens(...local(e));
+    });
+    stage.addEventListener('pointerleave', () => p.lensOff());
+    stage.addEventListener('click', (e) => {
+      if ((e.target as Element).closest('a, button')) return;
+      p.next();
+    });
+    btn.addEventListener('click', () => p.next());
+
+    // touch: the lens sits under the finger while it's down; scrolling still works
+    let lift = 0;
+    stage.addEventListener(
+      'touchmove',
+      (e) => {
+        clearTimeout(lift);
+        p.lens(...local(e.touches[0]));
+      },
+      { passive: true },
+    );
+    stage.addEventListener('touchstart', (e) => p.lens(...local(e.touches[0])), { passive: true });
+    stage.addEventListener('touchend', () => (lift = window.setTimeout(() => p.lensOff(), 350)), { passive: true });
+
+    // scroll through the sticky hero flattens the drawing onto the grid
+    if (!reduced) {
+      let ticking = false;
+      const onScroll = () => {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(() => {
+          ticking = false;
+          const r = section.getBoundingClientRect();
+          p.setScroll(-r.top / Math.max(1, r.height - innerHeight));
+        });
+      };
+      addEventListener('scroll', onScroll, { passive: true });
+      onScroll();
+    }
+  })();
+</script>
 
 <style>
   .hero {
     position: relative;
-    display: grid;
-    grid-template-rows: auto 1fr;
     height: 100svh;
-    min-height: 560px;
-    max-height: 1200px;
-    padding: calc(var(--frame) + 4.4rem) calc(var(--frame) + var(--gutter)) 0;
   }
+  :global(.js) .hero {
+    height: 175svh;
+  }
+  .hero__stage {
+    position: sticky;
+    top: 0;
+    height: 100svh;
+    min-height: 520px;
+    overflow: hidden;
+    cursor: crosshair;
+    touch-action: pan-y;
+  }
+  .hero__canvas,
+  .hero__static {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .hero__static {
+    object-fit: cover;
+  }
+
   .hero__meta {
+    position: absolute;
+    top: calc(var(--frame) + 4.4rem);
+    left: calc(var(--frame) + var(--gutter));
+    right: calc(var(--frame) + var(--gutter));
     display: flex;
     flex-wrap: wrap;
     justify-content: space-between;
-    gap: 0.4rem 1rem;
+    align-items: baseline;
+    gap: 0.5rem 1rem;
   }
-
-  /* the headline block sits a little below centre: lots of paper above it */
-  .hero__body {
-    align-self: center;
-    width: fit-content;
-    max-width: 100%;
-    padding-top: 6svh;
+  .hero__next {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.45em;
+    padding: 0.35rem 0;
+    color: var(--ink);
   }
-  .hero__who {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.2rem 0.6rem;
-    margin-bottom: 1.4rem;
-  }
-  .hero__title {
-    font-size: clamp(2.6rem, 7.2vw, 8.4rem);
-    font-weight: 800;
-    letter-spacing: -0.045em;
-    line-height: 0.93;
-  }
-  .hero__line {
-    display: block;
-  }
-
-  /* dimension line: measures the headline block, tick at each end, label in the middle */
-  .dimline {
-    position: relative;
-    display: grid;
-    place-items: center;
-    margin-top: clamp(1.4rem, 3svh, 2.4rem);
-    height: 2.2rem;
-    text-decoration: none;
+  .hero__arrow {
     color: var(--accent-text);
-  }
-  .dimline__h {
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 50%;
-    height: 1px;
-    background: var(--accent);
-  }
-  .dimline__h::before,
-  .dimline__h::after {
-    content: '';
-    position: absolute;
-    top: -6px;
-    width: 1px;
-    height: 13px;
-    background: var(--accent);
-    transform: rotate(45deg);
-  }
-  .dimline__h::before {
-    left: 0;
-  }
-  .dimline__h::after {
-    right: 0;
-  }
-  .dimline__label {
-    position: relative;
-    padding: 0.2rem 0.6rem;
-    background: var(--bg);
+    transition: transform var(--dur-ui) var(--ease-out);
   }
   @media (hover: hover) and (pointer: fine) {
-    .dimline__label {
-      transition: color var(--dur-hover) ease;
-    }
-    .dimline:hover .dimline__label {
-      color: var(--ink);
+    .hero__next:hover .hero__arrow {
+      transform: translateX(5px);
     }
   }
 
-  /* from the middle of the dimension line straight down off the sheet: the way on */
-  .hero__drop {
+  .hero__hint {
     position: absolute;
-    left: 50%;
-    bottom: 0;
-    width: 1px;
-    height: 18svh;
-    background: linear-gradient(var(--accent), transparent);
-    overflow: hidden;
+    left: calc(var(--frame) + var(--gutter));
+    bottom: calc(var(--frame) + 1.1rem);
+    font-size: 10px;
   }
-  .hero__pulse {
-    position: absolute;
-    left: -1px;
-    top: 0;
-    width: 3px;
-    height: 28%;
-    background: var(--accent);
-    transform: translateY(-100%);
-    animation: drop 2.4s var(--ease-in-out) 1.2s infinite;
+  .hint-touch {
+    display: none;
   }
-  @keyframes drop {
-    0% {
-      transform: translateY(-100%);
-    }
-    60%,
-    100% {
-      transform: translateY(400%);
-    }
-  }
-
-  /* the arrival: Intro.astro sets [data-intro] on <html> and removes it when the sheet lifts */
-  .hero__body {
-    transition: transform 700ms var(--ease-out);
-  }
-  .dimline__h {
-    transition: transform 700ms var(--ease-in-out) 200ms;
-  }
-  .dimline__label,
-  .hero__drop {
-    transition: opacity 400ms ease 600ms;
-  }
-  :global(html[data-intro]) .hero__body {
-    transform: translateY(16px);
-  }
-  :global(html[data-intro]) .dimline__h {
-    transform: scaleX(0);
-  }
-  :global(html[data-intro]) .dimline__label,
-  :global(html[data-intro]) .hero__drop {
-    opacity: 0;
-  }
-
-  @media (max-width: 760px) {
-    .hero {
-      padding-top: calc(var(--frame) + 3.6rem);
-    }
-    .hero__where {
+  @media (hover: none) {
+    .hint-fine {
       display: none;
     }
-    .hero__title {
-      font-size: clamp(2.5rem, 12.5vw, 4.4rem);
+    .hint-touch {
+      display: inline;
     }
-    .hero__body {
-      align-self: end;
-      padding-bottom: 22svh;
+  }
+  :global(.no-js) .hero__hint,
+  :global(.no-js) .hero__next {
+    display: none;
+  }
+
+  .hero__cue {
+    position: absolute;
+    left: 50%;
+    bottom: calc(var(--frame) + 2.6rem);
+    transform: translateX(-50%);
+    display: grid;
+    justify-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+    font-size: 10px;
+    color: var(--accent-text);
+    padding: 0.4rem 0.6rem;
+    background: var(--bg);
+  }
+  .hero__cue-line {
+    width: 1px;
+    height: 28px;
+    background: var(--accent);
+    transform-origin: top;
+    animation: cue 2.2s var(--ease-in-out) 1.8s infinite both;
+  }
+  @keyframes cue {
+    0% {
+      transform: scaleY(0);
+      transform-origin: top;
+    }
+    45% {
+      transform: scaleY(1);
+      transform-origin: top;
+    }
+    55% {
+      transform: scaleY(1);
+      transform-origin: bottom;
+    }
+    100% {
+      transform: scaleY(0);
+      transform-origin: bottom;
+    }
+  }
+
+  /* the title block grows wide on tablets: keep the hint above it */
+  @media (max-width: 1100px) {
+    .hero__hint {
+      bottom: calc(var(--frame) + 2.6rem);
+    }
+  }
+  @media (max-width: 760px) {
+    .hero__meta {
+      top: calc(var(--frame) + 3.6rem);
+    }
+    .hero__meta > span:first-child .mono-meta {
+      display: none;
+    }
+    .hero__hint {
+      left: 50%;
+      transform: translateX(-50%);
+      white-space: nowrap;
+      bottom: calc(var(--frame) + 2.6rem);
+    }
+    .hero__cue {
+      display: none;
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .hero__pulse {
-      display: none;
+    :global(.js) .hero {
+      height: 100svh;
     }
-    .hero__body,
-    .dimline__h,
-    .dimline__label,
-    .hero__drop {
-      transition: none;
+    .hero__cue-line {
+      animation: none;
     }
   }
 </style>
-
-<script>
-  // line the drop up with the middle of the dimension line (the headline is content-sized)
-  const hero = document.querySelector<HTMLElement>('.hero');
-  const dim = hero?.querySelector<HTMLElement>('.dimline');
-  const drop = hero?.querySelector<HTMLElement>('.hero__drop');
-  if (hero && dim && drop) {
-    const place = () => {
-      const h = hero.getBoundingClientRect();
-      const d = dim.getBoundingClientRect();
-      drop.style.left = `${(d.left + d.width / 2 - h.left).toFixed(1)}px`;
-      drop.style.height = `${Math.max(40, h.bottom - d.bottom).toFixed(1)}px`;
-    };
-    place();
-    new ResizeObserver(place).observe(hero);
-    document.fonts?.ready.then(place);
-  }
-</script>

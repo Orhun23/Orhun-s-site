@@ -1,0 +1,30 @@
+[
+ {
+  "name": "snow",
+  "label": "Snow",
+  "src": "/media/hero/plot-snow.png",
+  "w": 180,
+  "h": 178
+ },
+ {
+  "name": "skate",
+  "label": "Skate",
+  "src": "/media/hero/plot-skate.png",
+  "w": 180,
+  "h": 152
+ },
+ {
+  "name": "surf",
+  "label": "Surf",
+  "src": "/media/hero/plot-surf.png",
+  "w": 180,
+  "h": 177
+ },
+ {
+  "name": "tallbike",
+  "label": "Tallbike",
+  "src": "/media/hero/plot-tallbike.png",
+  "w": 180,
+  "h": 369
+ }
+]
