@@ -25,7 +25,7 @@ const [top, h] = await page.evaluate((s) => {
 await page.evaluate((y) => scrollTo(0, y), top);
 await page.waitForTimeout(800);
 
-await browser.startTracing(page, { categories: ['devtools.timeline', 'disabled-by-default-devtools.timeline', 'blink'] });
+await browser.startTracing(page, { categories: ['devtools.timeline', 'disabled-by-default-devtools.timeline', 'disabled-by-default-devtools.timeline.stack', 'blink'] });
 const steps = Math.floor(h / 60);
 for (let i = 0; i < steps; i++) {
   if (mobile) await page.evaluate(() => scrollBy(0, 60));
@@ -41,7 +41,8 @@ const evs = traceEvents.filter((e) => e.ph === 'X' && e.pid === main.pid && e.ti
 const sum = {};
 for (const e of evs) sum[e.name] = (sum[e.name] ?? 0) + e.dur / 1000;
 const pick = ['FunctionCall', 'FireAnimationFrame', 'EventDispatch', 'UpdateLayoutTree', 'Layout', 'PrePaint', 'Paint', 'PaintImage', 'Layerize', 'Commit', 'ParseHTML', 'TimerFire', 'IntersectionObserverController::computeIntersections', 'HitTest', 'ScrollLayer', 'GPUTask', 'RasterTask', 'DecodeImage', 'ImageDecodeTask', 'v8.run'];
-console.log('steps', steps);
+const frames = evs.filter((e) => e.name === 'WebFrameWidgetImpl::BeginMainFrame').length || 1;
+console.log('steps', steps, 'main frames', frames, 'ms/frame', ((sum.RunTask ?? 0) / frames).toFixed(2), 'commit/frame', ((sum.Commit ?? 0) / frames).toFixed(2), 'layout/frame', ((sum.Layout ?? 0) / frames).toFixed(2));
 for (const [k, v] of Object.entries(sum).sort((a, b) => b[1] - a[1]).slice(0, 22)) if (v > 2) console.log(String(v.toFixed(1)).padStart(8), 'ms ', k);
 // forced layouts/style: those with a JS stack
 const forced = evs.filter((e) => (e.name === 'Layout' || e.name === 'UpdateLayoutTree') && e.args?.beginData?.stackTrace);
