@@ -19,12 +19,32 @@ const revealIO = new IntersectionObserver(
   },
   { rootMargin: '0px 0px -12% 0px' },
 );
+// Every observed element is checked on every scroll frame until it reveals, so a sheet's
+// reveals are only handed to the observer when the sheet comes within half a screen.
+const bySheet = new Map<Element, Element[]>();
+const nearIO = new IntersectionObserver(
+  (entries) => {
+    for (const e of entries) {
+      if (!e.isIntersecting) continue;
+      bySheet.get(e.target)?.forEach((w) => revealIO.observe(w));
+      nearIO.unobserve(e.target);
+    }
+  },
+  { rootMargin: '50% 0px' },
+);
 document.querySelectorAll('[data-reveal], [data-draw]').forEach((el) => {
   const watch = el.getAttribute('data-reveal') === 'wipe' && el.parentElement ? el.parentElement : el;
   const list = revealTargets.get(watch);
-  if (list) list.push(el);
-  else revealTargets.set(watch, [el]);
-  revealIO.observe(watch);
+  if (list) return void list.push(el);
+  revealTargets.set(watch, [el]);
+  const sheet = watch.closest('.trip, [data-sheet]');
+  if (!sheet) return void revealIO.observe(watch);
+  const group = bySheet.get(sheet);
+  if (group) group.push(watch);
+  else {
+    bySheet.set(sheet, [watch]);
+    nearIO.observe(sheet);
+  }
 });
 
 /* ---------- title block: which sheet are we on ---------- */
