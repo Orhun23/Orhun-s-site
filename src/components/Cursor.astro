@@ -1,0 +1,286 @@
+---
+// Custom cursor: a pen. An orange dot that sits exactly on the pointer (transform only), and an
+// ink tail drawn behind it on a canvas while it moves; the tail is longer the faster you go and
+// shrinks back into the dot when you stop (after Daniel Ingrassia's comet cursor).
+// Over links it opens into a ring; over videos and build cards the ring says what a click does.
+// Only for a fine pointer with motion allowed: touch and reduced motion keep the system cursor.
+---
+
+<canvas class="cur-trail" data-cur-trail aria-hidden="true"></canvas>
+<div class="cur" data-cur aria-hidden="true">
+  <span class="cur__ring"><span class="cur__label mono" data-cur-label></span></span>
+  <span class="cur__dot"></span>
+</div>
+
+<script>
+  import { reducedMotion, finePointer } from '../scripts/env';
+
+  const root = document.documentElement;
+  const el = document.querySelector<HTMLElement>('[data-cur]');
+  const canvas = document.querySelector<HTMLCanvasElement>('[data-cur-trail]');
+
+  if (el && canvas && finePointer() && !reducedMotion()) {
+    root.classList.add('has-cursor');
+    const label = el.querySelector<HTMLElement>('[data-cur-label]')!;
+    const ctx = canvas.getContext('2d')!;
+    let W = 0,
+      H = 0,
+      dpr = 1;
+    const fit = () => {
+      W = innerWidth;
+      H = innerHeight;
+      dpr = Math.min(devicePixelRatio || 1, 2);
+      canvas.width = Math.round(W * dpr);
+      canvas.height = Math.round(H * dpr);
+    };
+    fit();
+    addEventListener('resize', fit);
+
+    // pointer history: the tail is the path of the last TRAIL ms
+    const TRAIL = 110;
+    const pts: { x: number; y: number; t: number }[] = [];
+    let x = -100,
+      y = -100,
+      raf = 0,
+      shown = false,
+      dirty: [number, number, number, number] | null = null;
+
+    const accent = () => getComputedStyle(root).getPropertyValue('--orange').trim() || '#ff4f00';
+    let color = accent();
+    addEventListener('themechange', () => (color = accent()));
+
+    function draw(now: number) {
+      raf = 0;
+      // clear only what was drawn last frame
+      if (dirty) {
+        const [a, b, c, d] = dirty;
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(a * dpr - 4, b * dpr - 4, (c - a) * dpr + 8, (d - b) * dpr + 8);
+        dirty = null;
+      }
+      while (pts.length && now - pts[0].t > TRAIL) pts.shift();
+      if (pts.length > 1) {
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = color;
+        let minX = x,
+          minY = y,
+          maxX = x,
+          maxY = y;
+        // tapered: each segment thinner and fainter towards the tail end
+        for (let i = 1; i < pts.length; i++) {
+          const k = i / (pts.length - 1);
+          const a = pts[i - 1],
+            b = pts[i];
+          ctx.globalAlpha = 0.15 + 0.75 * k;
+          ctx.lineWidth = 0.6 + 4.2 * k;
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+          ctx.stroke();
+          minX = Math.min(minX, a.x);
+          minY = Math.min(minY, a.y);
+          maxX = Math.max(maxX, a.x);
+          maxY = Math.max(maxY, a.y);
+        }
+        dirty = [minX, minY, maxX, maxY];
+      }
+      // keep going until the tail has fully shrunk back into the dot
+      if (pts.length > 1) raf = requestAnimationFrame(draw);
+    }
+    const kick = () => {
+      if (!raf) raf = requestAnimationFrame(draw);
+    };
+
+    addEventListener(
+      'pointermove',
+      (e) => {
+        if (e.pointerType !== 'mouse') return;
+        x = e.clientX;
+        y = e.clientY;
+        el.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+        if (!shown) {
+          shown = true;
+          el.classList.add('is-on');
+        }
+        const now = performance.now();
+        // coalesced events give a smooth tail even when the main thread is busy
+        const evs = e.getCoalescedEvents?.() ?? [];
+        if (evs.length > 1) for (const c of evs) pts.push({ x: c.clientX, y: c.clientY, t: now });
+        else pts.push({ x, y, t: now });
+        // pin the newest point to the dot, so the tail always starts at it
+        pts.push({ x, y, t: now });
+        if (pts.length > 64) pts.splice(0, pts.length - 64);
+        kick();
+      },
+      { passive: true },
+    );
+    document.addEventListener('pointerleave', () => {
+      shown = false;
+      el.classList.remove('is-on');
+    });
+    addEventListener('pointerdown', () => el.classList.add('is-down'));
+    addEventListener('pointerup', () => el.classList.remove('is-down'));
+
+    // hover states: what's under the pointer decides the shape (and the word)
+    const states: [string, string, string][] = [
+      ['[data-plate]', 'media', ''],
+      ['[data-insp-view]', 'card', 'Inspect'],
+      ['.build-mini, .wt__row, .row, .role__pg, .bd__next', 'card', 'Open'],
+      ['[data-hero-stage] canvas', 'lens', ''],
+      ['a, button, [role="tab"], summary, label', 'link', ''],
+    ];
+    let current = '';
+    addEventListener(
+      'pointerover',
+      (e) => {
+        const t = e.target as Element;
+        let state = '',
+          word = '';
+        for (const [sel, st, w] of states) {
+          const hit = t.closest(sel);
+          if (!hit) continue;
+          // a link inside a card is still the card; the play button inside a video is the video
+          state = st;
+          word = w;
+          if (st === 'media') {
+            const v = hit.querySelector('video');
+            word = v && !v.paused ? 'Pause' : 'Play';
+          }
+          break;
+        }
+        const key = state + word;
+        if (key === current) return;
+        current = key;
+        el.dataset.state = state;
+        label.textContent = word;
+      },
+      { passive: true },
+    );
+    // the word over a video follows its state
+    document.querySelectorAll('[data-plate] video').forEach((v) =>
+      ['play', 'pause'].forEach((ev) =>
+        v.addEventListener(ev, () => {
+          if (el.dataset.state === 'media' && current.startsWith('media')) {
+            label.textContent = (v as HTMLVideoElement).paused ? 'Play' : 'Pause';
+            current = 'media' + label.textContent;
+          }
+        }),
+      ),
+    );
+  }
+</script>
+
+<style>
+  .cur,
+  .cur-trail {
+    display: none;
+  }
+  :global(.has-cursor) .cur,
+  :global(.has-cursor) .cur-trail {
+    display: block;
+  }
+  :global(.has-cursor),
+  :global(.has-cursor *) {
+    cursor: none !important;
+  }
+
+  .cur-trail {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 998;
+    pointer-events: none;
+  }
+  .cur {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 999;
+    pointer-events: none;
+    width: 0;
+    height: 0;
+    opacity: 0;
+    transition: opacity 200ms ease;
+  }
+  .cur.is-on {
+    opacity: 1;
+  }
+  .cur__dot,
+  .cur__ring {
+    position: absolute;
+    left: 0;
+    top: 0;
+    border-radius: 50%;
+  }
+  .cur__dot {
+    width: 8px;
+    height: 8px;
+    margin: -4px 0 0 -4px;
+    background: var(--orange);
+    transition: transform 220ms var(--ease-out);
+  }
+  .cur__ring {
+    width: 56px;
+    height: 56px;
+    margin: -28px 0 0 -28px;
+    border: 1px solid var(--orange);
+    display: grid;
+    place-items: center;
+    transform: scale(0.15);
+    opacity: 0;
+    transition:
+      transform 260ms var(--ease-out),
+      opacity 180ms ease;
+  }
+  .cur__label {
+    font-size: 9px;
+    color: var(--orange);
+    background: color-mix(in srgb, var(--paper) 85%, transparent);
+    padding: 0.1rem 0.3rem;
+    opacity: 0;
+    transition: opacity 160ms ease;
+  }
+
+  /* link: the dot opens into a ring */
+  .cur[data-state='link'] .cur__ring {
+    transform: scale(0.6);
+    opacity: 1;
+  }
+  .cur[data-state='link'] .cur__dot {
+    transform: scale(0.5);
+  }
+  /* videos + cards: a bigger ring with a word in it */
+  .cur[data-state='media'] .cur__ring,
+  .cur[data-state='card'] .cur__ring {
+    transform: scale(1.3);
+    opacity: 1;
+  }
+  .cur[data-state='media'] .cur__dot,
+  .cur[data-state='card'] .cur__dot {
+    transform: scale(0);
+  }
+  .cur[data-state='media'] .cur__label,
+  .cur[data-state='card'] .cur__label {
+    opacity: 1;
+  }
+  /* hero: the drawing has its own lens, so the pen shrinks to a point */
+  .cur[data-state='lens'] .cur__dot {
+    transform: scale(0.6);
+  }
+  /* press */
+  .cur.is-down .cur__ring {
+    transform: scale(1.1);
+  }
+  .cur.is-down[data-state='link'] .cur__ring {
+    transform: scale(0.5);
+  }
+
+  @media print {
+    .cur,
+    .cur-trail {
+      display: none !important;
+    }
+  }
+</style>

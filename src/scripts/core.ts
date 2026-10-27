@@ -136,6 +136,8 @@ videos.forEach((v) => {
       v.pause();
     }
   });
+  // clicking the video itself does the same as its play/pause button
+  v.addEventListener('click', () => btn?.click());
 });
 
 /* ---------- copy email ---------- */

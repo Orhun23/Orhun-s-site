@@ -4,6 +4,7 @@ import '../styles/global.css';
 import SheetFrame from '../components/SheetFrame.astro';
 import Header from '../components/Header.astro';
 import TitleBlock from '../components/TitleBlock.astro';
+import Cursor from '../components/Cursor.astro';
 import { site, person } from '../data/site';
 
 interface Props {
@@ -89,6 +90,7 @@ const ogImage = new URL('/og.png', Astro.site);
       <slot />
     </main>
     {!bare && <TitleBlock sheet={sheet} />}
+    {!bare && <Cursor />}
     <slot name="after" />
     {!bare && (
       <script>
