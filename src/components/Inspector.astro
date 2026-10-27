@@ -69,6 +69,7 @@ const parts = d.specs.slice(0, 5);
       }
       <p class="insp__hint mono mono-meta" aria-hidden="true">
         <span class="hint-fine">Move to tilt · hover the photo for x-ray</span>
+        <span class="hint-touch">Drag to turn · hold the photo for x-ray</span>
       </p>
     </div>
 
@@ -269,8 +270,14 @@ const parts = d.specs.slice(0, 5);
     height: 100%;
     object-fit: contain;
   }
-  .insp.is-done .insp__view:hover .insp__xray {
-    --r: 110px;
+  @media (hover: hover) {
+    .insp.is-done .insp__view:hover .insp__xray {
+      --r: 110px;
+    }
+  }
+  /* touch: press and hold the photo */
+  .insp.is-lens .insp__xray {
+    --r: 84px;
   }
   .insp.is-xray .insp__xray {
     --r: 160vmax !important;
@@ -294,9 +301,29 @@ const parts = d.specs.slice(0, 5);
     bottom: 0.4rem;
     font-size: 9.5px;
   }
+  .hint-touch {
+    display: none;
+  }
   @media (hover: none) {
-    .insp__hint {
+    .hint-fine {
       display: none;
+    }
+    .hint-touch {
+      display: inline;
+    }
+    .insp__hint {
+      font-size: 10.5px;
+      transition: opacity var(--dur-ui) ease;
+    }
+    /* the finished photo covers the hint; the status line says it instead */
+    .insp.is-done .insp__hint {
+      opacity: 0;
+    }
+    /* holding the photo is the x-ray, not iOS's save-image menu */
+    .insp__view {
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
     }
   }
   :global(.no-js) .insp__hint,
@@ -396,7 +423,7 @@ const parts = d.specs.slice(0, 5);
     }
     .insp__overlay :global(.xl-label),
     .insp__overlay :global(.xl-dim) {
-      font-size: 9px;
+      font-size: 10px;
     }
   }
 

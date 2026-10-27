@@ -137,7 +137,7 @@ export function initBench() {
                 ? 'Scanning'
                 : finePointer()
                   ? 'As built · hover for x-ray'
-                  : 'As built · tap X-ray';
+                  : 'As built · hold for x-ray';
     swapText(it.partEl, text);
   }
 
@@ -230,6 +230,52 @@ export function initBench() {
         }
       });
       it.view.addEventListener('pointerleave', () => it.engine?.pointer(0, 0));
+    } else if (!reduced) {
+      // touch: drag the drawing to turn it; press and hold the finished photo for the x-ray lens
+      let start: { x: number; y: number } | null = null;
+      let hold = 0;
+      const local = (e: PointerEvent) => {
+        const r = it.view.getBoundingClientRect();
+        return [e.clientX - r.left, e.clientY - r.top, r.width, r.height] as const;
+      };
+      const lensAt = (x: number, y: number) => {
+        it.xray?.style.setProperty('--mx', `${x}px`);
+        it.xray?.style.setProperty('--my', `${y}px`);
+      };
+      const end = () => {
+        start = null;
+        clearTimeout(hold);
+        it.el.classList.remove('is-lens');
+        it.engine?.pointer(0, 0);
+      };
+      it.view.addEventListener('pointerdown', (e) => {
+        if (e.pointerType === 'mouse') return;
+        const [x, y] = local(e);
+        start = { x: e.clientX, y: e.clientY };
+        if (it.xray && it.el.classList.contains('is-done')) {
+          lensAt(x, y);
+          hold = window.setTimeout(() => it.el.classList.add('is-lens'), 260);
+        }
+      });
+      it.view.addEventListener('pointermove', (e) => {
+        if (!start || e.pointerType === 'mouse') return;
+        const [x, y, w, h] = local(e);
+        const dx = e.clientX - start.x,
+          dy = e.clientY - start.y;
+        if (it.el.classList.contains('is-lens')) lensAt(x, y);
+        else if (Math.hypot(dx, dy) > 10) clearTimeout(hold);
+        // a sideways drag turns the model, about one full tilt per half the view's width
+        it.engine?.pointer(Math.max(-1, Math.min(1, dx / (w * 0.5))), Math.max(-1, Math.min(1, dy / (h * 0.8))));
+      });
+      for (const ev of ['pointerup', 'pointercancel', 'pointerleave'] as const) it.view.addEventListener(ev, end);
+      // while the lens is up, the finger steers it instead of scrolling the page
+      it.view.addEventListener(
+        'touchmove',
+        (e) => {
+          if (it.el.classList.contains('is-lens')) e.preventDefault();
+        },
+        { passive: false },
+      );
     }
     const btn = it.el.querySelector<HTMLButtonElement>('[data-insp-xbtn]');
     btn?.addEventListener('click', () => {
