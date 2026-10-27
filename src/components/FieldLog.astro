@@ -328,6 +328,11 @@ import whalePoster from '../assets/media/trips/whale-shark.jpg';
     }
   }
 
+  @media (hover: none) {
+    .trip__shot:global(.is-focus) :global(img) {
+      transform: scale(1.03);
+    }
+  }
   @media (max-width: 960px) {
     .boards {
       grid-template-columns: repeat(3, 1fr);

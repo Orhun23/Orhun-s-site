@@ -66,6 +66,17 @@ if (benches.length) {
   band('data-bench-bottom', '-94% 0px 0px 0px');
 }
 
+/* ---------- touch: what hovers on desktop lights up as it crosses the middle of the screen ---------- */
+if (matchMedia('(hover: none)').matches && !reducedMotion()) {
+  const focusIO = new IntersectionObserver(
+    (entries) => entries.forEach((e) => e.target.classList.toggle('is-focus', e.isIntersecting)),
+    { rootMargin: '-44% 0px -44% 0px' },
+  );
+  document
+    .querySelectorAll('.build-mini, .wt__row, .row, .role__pg, .bd__next, .trip__shot, .contact__mail')
+    .forEach((el) => focusIO.observe(el));
+}
+
 /* ---------- local time in Eindhoven ---------- */
 const clocks = document.querySelectorAll<HTMLTimeElement>('[data-clock]');
 if (clocks.length) {

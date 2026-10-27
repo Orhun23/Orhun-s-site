@@ -171,6 +171,17 @@ import { roles, education, skills, certificates, languages } from '../data/work'
     }
   }
 
+  @media (hover: none) {
+    .row:global(.is-focus)::before {
+      opacity: 1;
+    }
+    .row:global(.is-focus) .row__org {
+      color: var(--accent-text);
+    }
+    .row:global(.is-focus) .row__go {
+      transform: translateX(6px);
+    }
+  }
   .work__grid {
     display: grid;
     grid-template-columns: 1.4fr 1fr;

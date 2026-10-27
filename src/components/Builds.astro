@@ -116,6 +116,11 @@ const rest = builds.filter((b) => !(b.data.model && b.data.cover));
       transform: translateX(6px);
     }
   }
+  @media (hover: none) {
+    .build-mini:global(.is-focus) .build-mini__open span {
+      transform: translateX(6px);
+    }
+  }
   @media (max-width: 860px) {
     .build-mini {
       grid-template-columns: auto 1fr;

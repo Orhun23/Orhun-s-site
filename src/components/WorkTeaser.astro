@@ -106,6 +106,18 @@ import { roles } from '../data/work';
       color: var(--accent-text);
     }
   }
+  /* touch: the row in the middle of the screen gets the hover look */
+  @media (hover: none) {
+    .wt__row {
+      transition: background-color var(--dur-ui) ease;
+    }
+    .wt__row:global(.is-focus) {
+      background: var(--bg-raised);
+    }
+    .wt__row:global(.is-focus) .wt__org {
+      color: var(--accent-text);
+    }
+  }
   @media (max-width: 860px) {
     .wt__grid {
       grid-template-columns: 1fr;

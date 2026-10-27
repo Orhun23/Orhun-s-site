@@ -399,6 +399,11 @@ const code = `W-${String(i + 1).padStart(2, '0')}`;
     }
   }
 
+  @media (hover: none) {
+    .role__pg:global(.is-focus) .role__pg-org {
+      color: var(--accent-text);
+    }
+  }
   @media (max-width: 860px) {
     .role__intro {
       grid-template-columns: 1fr;
