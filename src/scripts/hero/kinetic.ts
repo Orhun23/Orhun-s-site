@@ -24,15 +24,17 @@ type Letter = {
 
 export type Kinetic = {
   move(x: number, y: number): void; // client coordinates
+  moveRel(u: number, v: number): void; // fractions of the line's own box, no layout read
   leave(): void;
   setActive(on: boolean): void;
   measure(): void;
 };
 
-const STRETCH = 0.55; // extra width at full influence
+const STRETCH = 0.55; // extra width at full influence (desktop)
 const SPREAD = 1.7; // falloff, in letter widths
 
-export function createKinetic(root: HTMLElement): Kinetic {
+export function createKinetic(root: HTMLElement, opts: { stretch?: number } = {}): Kinetic {
+  const stretch = opts.stretch ?? STRETCH;
   const letters: Letter[] = [...root.querySelectorAll<HTMLElement>('[data-k]')].map((el) => ({
     el,
     solid: el.querySelector<HTMLElement>('.k__a')!,
@@ -49,7 +51,9 @@ export function createKinetic(root: HTMLElement): Kinetic {
   let ox = 0,
     oy = 0,
     lineH = 1,
-    avgW = 1;
+    avgW = 1,
+    rw = 1,
+    rh = 1;
   let px = -1e4,
     py = -1e4,
     inside = false,
@@ -66,6 +70,8 @@ export function createKinetic(root: HTMLElement): Kinetic {
     const r = root.getBoundingClientRect();
     ox = r.left;
     oy = r.top;
+    rw = r.width;
+    rh = r.height;
     const tops: number[] = [];
     for (const l of letters) {
       const b = l.el.getBoundingClientRect();
@@ -83,7 +89,7 @@ export function createKinetic(root: HTMLElement): Kinetic {
   }
 
   function write(l: Letter, shift: number) {
-    const s = 1 + STRETCH * l.f;
+    const s = 1 + stretch * l.f;
     const t = l.f < 0.001 && Math.abs(shift) < 0.05 ? '' : `translate3d(${shift.toFixed(2)}px,0,0) scaleX(${s.toFixed(4)})`;
     if (t !== l.last) {
       l.el.style.transform = t;
@@ -127,7 +133,7 @@ export function createKinetic(root: HTMLElement): Kinetic {
       let acc = 0;
       const pos: number[] = [];
       for (const l of row) {
-        const extra = l.w * STRETCH * l.f;
+        const extra = l.w * stretch * l.f;
         pos.push(acc + extra / 2);
         acc += extra;
       }
@@ -153,6 +159,12 @@ export function createKinetic(root: HTMLElement): Kinetic {
       px = x - ox;
       py = y - oy;
       inside = px > -avgW * 2 && px < r.width + avgW * 2 && py > -lineH && py < r.height + lineH;
+      kick();
+    },
+    moveRel(u, v) {
+      px = u * rw;
+      py = v * rh;
+      inside = true;
       kick();
     },
     leave() {
