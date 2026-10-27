@@ -19,6 +19,36 @@
   const el = document.querySelector<HTMLElement>('[data-cur]');
   const canvas = document.querySelector<HTMLCanvasElement>('[data-cur-trail]');
 
+  // touch: no cursor, but the same pen answers where the finger lands — a small orange ring
+  // that blooms and fades (transform + opacity, a pool of three reused elements)
+  if (!finePointer() && !reducedMotion()) {
+    const pool = Array.from({ length: 3 }, () => {
+      const r = document.createElement('span');
+      r.className = 'tap-ring';
+      r.setAttribute('aria-hidden', 'true');
+      document.body.appendChild(r);
+      return r;
+    });
+    let n = 0;
+    addEventListener(
+      'pointerdown',
+      (e) => {
+        if (e.pointerType === 'mouse') return;
+        const r = pool[n++ % pool.length];
+        r.getAnimations().forEach((a) => a.cancel());
+        r.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0)`;
+        r.animate(
+          [
+            { transform: `translate3d(${e.clientX}px, ${e.clientY}px, 0) scale(0.35)`, opacity: 0.9 },
+            { transform: `translate3d(${e.clientX}px, ${e.clientY}px, 0) scale(1)`, opacity: 0 },
+          ],
+          { duration: 520, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' },
+        );
+      },
+      { passive: true },
+    );
+  }
+
   if (el && canvas && finePointer() && !reducedMotion()) {
     root.classList.add('has-cursor');
     const ctx = canvas.getContext('2d')!;
@@ -211,6 +241,20 @@
   /* press */
   .cur.is-down[data-state='link'] .cur__ring {
     transform: scale(0.5);
+  }
+
+  :global(.tap-ring) {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 999;
+    width: 44px;
+    height: 44px;
+    margin: -22px 0 0 -22px;
+    border: 1.5px solid var(--orange);
+    border-radius: 50%;
+    pointer-events: none;
+    opacity: 0;
   }
 
   @media print {
