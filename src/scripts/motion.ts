@@ -5,7 +5,9 @@ import Lenis from 'lenis';
 import { reducedMotion, finePointer } from './env';
 
 export function start() {
-  if (!reducedMotion()) {
+  // mouse and trackpad only: Lenis doesn't smooth touch scrolling anyway, so on a phone it
+  // would only add a rAF loop and a class flip on <html> (a full restyle) to every scroll frame
+  if (finePointer() && !reducedMotion()) {
     const lenis = new Lenis({ lerp: 0.12, anchors: { offset: -64 }, autoRaf: true });
     (window as unknown as { __lenis?: Lenis }).__lenis = lenis;
   }

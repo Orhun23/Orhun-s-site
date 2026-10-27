@@ -24,6 +24,17 @@ html.lenis body {
 .lenis.lenis-stopped {
   overflow: hidden;
 }
+/* touch has no Lenis: native smooth anchor jumps, clear of the header */
+@media (hover: none) {
+  html {
+    scroll-padding-top: 64px;
+  }
+}
+@media (hover: none) and (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
 body {
   min-height: 100svh;
   background: var(--bg);
