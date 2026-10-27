@@ -23,6 +23,8 @@ const p = await getImage({ src: poster, width: Math.min(poster.width, 900), form
 <figure class:list={['plate', cls]} data-plate>
   <div class="plate__frame" style={`aspect-ratio:${ratio}`} data-reveal="wipe">
     <video muted playsinline loop preload="none" data-poster={p.src} data-autoplay aria-label={alt}>
+      <!-- phones get a lighter cut (scripts/media/make-mobile-videos.py); desktop skips this source -->
+      <source src={src.replace(/\.mp4$/, '.m.mp4')} type="video/mp4" media="(max-width: 760px)" />
       {webm && <source src={webm} type="video/webm" />}
       <source src={src} type="video/mp4" />
     </video>
