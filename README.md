@@ -1,8 +1,8 @@
 # orhun-site
 
-Personal site of Orhun Habib Erdogan. The whole thing is laid out as a set of engineering drawing sheets: a title block in the corner, part numbers, dimension lines. The hero is a line drawing of the tallbike that assembles itself as you scroll.
+Personal site of Orhun Habib Erdogan. The whole thing is laid out as a set of engineering drawing sheets: a title block in the corner, part numbers, dimension lines. On the first visit of a session the sheet draws itself in, then the hero stays still: type, and one dimension line pointing down. The builds section is an inspection bench where each build assembles itself as you scroll.
 
-Astro + TypeScript, vanilla CSS with design tokens, GSAP + ScrollTrigger, Lenis. No framework runtime, no tracking.
+Astro + TypeScript, vanilla CSS with design tokens, Lenis for smooth scroll, plain 2D canvas for the line drawings. No animation library, no tracking.
 
 ## Run it
 
@@ -27,7 +27,8 @@ npx astro check    # type check
 | Trips (Field log) | `src/data/trips.ts` |
 | Builds (one markdown file each) | `src/content/builds/*.md` |
 | Homepage sections | `src/components/*.astro` |
-| Hero drawing (the tallbike) | `src/scripts/hero/tallbike.ts` |
+| Hero + first-visit intro | `src/components/Hero.astro`, `src/components/Intro.astro` |
+| Build line models (bench) | `src/scripts/inspect/models/*.ts` |
 | Photos (optimised, metadata stripped) | `src/assets/media/` |
 | Videos | `public/media/` |
 

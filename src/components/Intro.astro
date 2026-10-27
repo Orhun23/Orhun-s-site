@@ -1,0 +1,201 @@
+---
+// First visit of a session: the drawing sheet draws itself in, then lifts off the page.
+// ~1.4 s, skippable with any click, key, wheel or touch. Never for reduced motion, never
+// without JS, never twice in one session. The decision is made in <head> (Base.astro) before
+// first paint, so nothing flashes.
+import { person } from '../data/site';
+
+const cols = 8,
+  rows = 6;
+---
+
+<div class="intro" aria-hidden="true" data-intro-el>
+  <svg class="intro__sheet" preserveAspectRatio="none">
+    <!-- the border, drawn from two opposite corners at once -->
+    <path class="ln ln--frame" pathLength="1" data-frame-a></path>
+    <path class="ln ln--frame" pathLength="1" data-frame-b></path>
+    <g data-ticks></g>
+  </svg>
+  <div class="intro__grid"></div>
+  <div class="intro__tb mono">
+    <span><span class="mono-meta">Sheet</span> 01 / 06</span>
+    <span><span class="mono-meta">Drawn</span> {person.initials}</span>
+    <span><span class="mono-meta">Rev</span> {person.age}</span>
+    <span class="intro__count"><span class="mono-meta">Plotting</span> <span data-count>0</span>%</span>
+  </div>
+</div>
+
+<script define:vars={{ cols, rows }}>
+  (() => {
+    const root = document.documentElement;
+    const el = document.querySelector('[data-intro-el]');
+    if (!el) return;
+    if (!root.hasAttribute('data-intro')) {
+      el.remove();
+      return;
+    }
+
+    // geometry: trace exactly where the real sheet frame sits (rendered just before this)
+    const svg = el.querySelector('svg');
+    const fr = document.querySelector('.frame');
+    const w = innerWidth,
+      h = innerHeight;
+    const r = fr ? fr.getBoundingClientRect() : { left: 16, top: 16, right: w - 16, bottom: h - 16 };
+    svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+    const x0 = r.left + 0.5,
+      y0 = r.top + 0.5,
+      x1 = r.right - 0.5,
+      y1 = r.bottom - 0.5;
+    el.querySelector('[data-frame-a]').setAttribute('d', `M${x0} ${y1} V${y0} H${x1}`);
+    el.querySelector('[data-frame-b]').setAttribute('d', `M${x1} ${y0} V${y1} H${x0}`);
+    const ticks = el.querySelector('[data-ticks]');
+    let d = '';
+    for (let i = 1; i < cols; i++) {
+      const x = x0 + ((x1 - x0) * i) / cols;
+      d += `M${x} ${y0}v6M${x} ${y1}v-6`;
+    }
+    for (let i = 1; i < rows; i++) {
+      const y = y0 + ((y1 - y0) * i) / rows;
+      d += `M${x0} ${y}h6M${x1} ${y}h-6`;
+    }
+    ticks.innerHTML = `<path class="ln ln--tick" d="${d}"></path>`;
+
+    // count-up in the title block while the border draws
+    const count = el.querySelector('[data-count]');
+    const DRAW = 950;
+    let t0 = 0;
+    let raf = 0;
+    const tick = (now) => {
+      t0 ||= now;
+      const k = Math.min(1, (now - t0) / DRAW);
+      count.textContent = String(Math.round((1 - Math.pow(1 - k, 3)) * 100));
+      if (k < 1) raf = requestAnimationFrame(tick);
+    };
+
+    let done = false;
+    const finish = (skip) => {
+      if (done) return;
+      done = true;
+      cancelAnimationFrame(raf);
+      try {
+        sessionStorage.setItem('intro-seen', '1');
+      } catch {}
+      el.classList.add(skip ? 'is-skipped' : 'is-leaving');
+      // releasing [data-intro] lets the hero settle in (transitions live in Hero.astro)
+      root.removeAttribute('data-intro');
+      setTimeout(() => el.remove(), skip ? 200 : 600);
+      for (const ev of ['pointerdown', 'keydown', 'wheel', 'touchstart']) removeEventListener(ev, skipper, true);
+    };
+    const skipper = () => finish(true);
+    for (const ev of ['pointerdown', 'keydown', 'wheel', 'touchstart']) addEventListener(ev, skipper, { capture: true, passive: true });
+    // start one frame after the overlay's first paint, so the transitions have a 'from' state
+    raf = requestAnimationFrame(() =>
+      requestAnimationFrame((now) => {
+        el.classList.add('is-playing');
+        tick(now);
+        setTimeout(() => finish(false), 1150);
+      }),
+    );
+  })();
+</script>
+
+<style>
+  .intro {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    background: var(--bg);
+    pointer-events: none;
+  }
+  /* only exists while <html data-intro> is set */
+  :global(html:not([data-intro])) .intro:not(.is-leaving):not(.is-skipped) {
+    display: none;
+  }
+  .intro__sheet {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .ln {
+    fill: none;
+    stroke: var(--line-strong);
+    stroke-width: 1;
+  }
+  .ln--frame {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+  }
+  .ln--tick {
+    opacity: 0;
+  }
+  .intro__grid {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 32px 32px;
+    background-position: -1px -1px;
+  }
+  .intro__tb {
+    position: absolute;
+    right: var(--frame);
+    bottom: var(--frame);
+    display: flex;
+    font-size: 9.5px;
+    border-top: 1px solid var(--line-strong);
+    border-left: 1px solid var(--line-strong);
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  .intro__tb > span {
+    padding: 0.4rem 0.65rem;
+    border-right: 1px solid var(--line);
+    white-space: nowrap;
+  }
+  .intro__tb > span:last-child {
+    border-right: 0;
+    min-width: 12ch;
+  }
+
+  /* timeline: border 0–950 ms, grid + ticks from 300 ms, title block from 450 ms */
+  .intro.is-playing .ln--frame {
+    transition: stroke-dashoffset 950ms cubic-bezier(0.77, 0, 0.175, 1);
+    stroke-dashoffset: 0;
+  }
+  .intro.is-playing .ln--tick,
+  .intro.is-playing .intro__grid {
+    transition: opacity 500ms ease 300ms;
+    opacity: 1;
+  }
+  .intro.is-playing .intro__tb {
+    transition:
+      opacity 300ms ease 450ms,
+      transform 400ms var(--ease-out) 450ms;
+    opacity: 1;
+    transform: none;
+  }
+  /* then the paper lifts: everything underneath is already in the same place */
+  .intro.is-leaving {
+    opacity: 0;
+    transition: opacity 450ms ease;
+  }
+  /* its title block goes first, so it never double-exposes over the real one */
+  .intro.is-leaving .intro__tb {
+    opacity: 0;
+    transition: opacity 120ms ease;
+  }
+  .intro.is-skipped {
+    opacity: 0;
+    transition: opacity 150ms ease;
+  }
+
+  @media (max-width: 720px) {
+    .intro__tb > span:nth-child(2),
+    .intro__tb > span:nth-child(3) {
+      display: none;
+    }
+  }
+</style>

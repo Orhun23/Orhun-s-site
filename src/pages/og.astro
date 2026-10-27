@@ -8,25 +8,16 @@ import { site, person } from '../data/site';
   <div class="og">
     <div class="og__frame">
       <p class="og__meta mono">
-        <span><span class="accent">Fig. 01</span> — The machine · 7 stages · 1 ball</span>
+        <span><span class="accent">Fig. 01</span> — General arrangement</span>
         <span class="mono-meta">{person.coords} · Rev {person.age}</span>
       </p>
-      <div class="og__canvas" data-og-canvas></div>
       <div class="og__copy">
         <p class="mono">{person.name} <span class="mono-meta">— {person.role}, {person.base}</span></p>
         <p class="og__title display">{site.heroLine[0]}<br />{site.heroLine[1]}</p>
+        <p class="og__dim mono"><span>6 sheets</span></p>
       </div>
     </div>
   </div>
-  <script>
-    import { createMachine } from '../scripts/hero/machine';
-    import { cssVar } from '../scripts/env';
-    document.documentElement.dataset.theme = 'light';
-    const box = document.querySelector<HTMLElement>('[data-og-canvas]')!;
-    createMachine({ container: box, labels: [], ink: cssVar('--ink'), accent: cssVar('--accent'), reduced: true });
-    // the strobe sprites load async; give them a moment before the screenshot
-    setTimeout(() => (document.documentElement.dataset.ogReady = '1'), 800);
-  </script>
 </Base>
 
 <style>
@@ -55,13 +46,6 @@ import { site, person } from '../data/site';
     justify-content: space-between;
     font-size: 13px;
   }
-  .og__canvas {
-    position: absolute;
-    top: 44px;
-    left: 20px;
-    right: 20px;
-    height: 370px;
-  }
   .og__copy {
     position: absolute;
     left: 32px;
@@ -71,8 +55,35 @@ import { site, person } from '../data/site';
     font-size: 13px;
     margin-bottom: 14px;
   }
+  .og__dim {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 28px;
+    margin-top: 22px;
+    font-size: 13px;
+    color: #b83500;
+  }
+  .og__dim::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    height: 1px;
+    background: #ff4f00;
+  }
+  .og__dim span {
+    position: relative;
+    padding: 0 10px;
+    background: var(--paper);
+  }
+  .og__copy {
+    width: fit-content;
+  }
   .og__title {
-    font-size: 54px;
+    font-size: 84px;
     font-weight: 800;
     letter-spacing: -0.04em;
     line-height: 0.95;

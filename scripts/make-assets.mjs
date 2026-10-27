@@ -14,35 +14,11 @@ const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=sw
 {
   const page = await browser.newPage({ viewport: { width: 1200, height: 630 }, colorScheme: 'light' });
   await page.goto(`${base}/og`, { waitUntil: 'networkidle' });
-  await page.waitForSelector('html[data-og-ready]');
+  await page.evaluate(() => document.fonts.ready);
   await page.waitForTimeout(800);
   await page.locator('.og').screenshot({ path: 'public/og.png' });
   await page.close();
   console.log('public/og.png');
-}
-
-// static machine drawing for visitors without JavaScript (end state, transparent background)
-{
-  const page = await browser.newPage({ viewport: { width: 1600, height: 900 }, colorScheme: 'light', reducedMotion: 'reduce' });
-  await page.goto(`${base}/`, { waitUntil: 'networkidle' });
-  await page.waitForSelector('[data-machine-canvas] canvas');
-  await page.waitForTimeout(1200);
-  const data = await page.evaluate(() => {
-    const src = document.querySelector('[data-machine-canvas] canvas');
-    const r = src.getBoundingClientRect();
-    // crop the drawing area out of the canvas (it letterboxes to 1600×640)
-    const scale = Math.min(r.width / 1600, r.height / 640);
-    const ox = (r.width - 1600 * scale) / 2, oy = (r.height - 640 * scale) / 2;
-    const dpr = src.width / r.width;
-    const out = document.createElement('canvas');
-    out.width = 1600; out.height = 640;
-    out.getContext('2d').drawImage(src, ox * dpr, oy * dpr, 1600 * scale * dpr, 640 * scale * dpr, 0, 0, 1600, 640);
-    return out.toDataURL('image/png');
-  });
-  fs.mkdirSync('public/media/hero', { recursive: true });
-  fs.writeFileSync('public/media/hero/machine-static.png', Buffer.from(data.split(',')[1], 'base64'));
-  await page.close();
-  console.log('public/media/hero/machine-static.png');
 }
 
 // CV PDF

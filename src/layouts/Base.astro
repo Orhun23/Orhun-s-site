@@ -4,6 +4,7 @@ import '../styles/global.css';
 import SheetFrame from '../components/SheetFrame.astro';
 import Header from '../components/Header.astro';
 import TitleBlock from '../components/TitleBlock.astro';
+import Intro from '../components/Intro.astro';
 import { site, person } from '../data/site';
 
 interface Props {
@@ -13,6 +14,7 @@ interface Props {
   sheet?: { no: string; title: string; of?: number };
   noindex?: boolean;
   bare?: boolean; // no chrome (used by /og and /cv print)
+  intro?: boolean; // homepage: the sheet draws itself on the first visit of a session
 }
 
 const {
@@ -21,6 +23,7 @@ const {
   sheet = { no: '01', title: 'General arrangement', of: 6 },
   noindex = false,
   bare = false,
+  intro = false,
 } = Astro.props;
 
 const fullTitle = title ? `${title} — ${person.name}` : site.title;
@@ -29,7 +32,7 @@ const ogImage = new URL('/og.png', Astro.site);
 ---
 
 <!doctype html>
-<html lang="en" class="no-js">
+<html lang="en" class="no-js" data-has-intro={intro ? '' : undefined}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -74,6 +77,16 @@ const ogImage = new URL('/og.png', Astro.site);
       (() => {
         const d = document.documentElement;
         d.classList.replace('no-js', 'js');
+        // intro: homepage, first visit this session, top of the page, motion allowed
+        try {
+          if (
+            d.hasAttribute('data-has-intro') &&
+            !sessionStorage.getItem('intro-seen') &&
+            !location.hash &&
+            !matchMedia('(prefers-reduced-motion: reduce)').matches
+          )
+            d.setAttribute('data-intro', '');
+        } catch {}
         try {
           const t = localStorage.getItem('theme');
           if (t === 'light' || t === 'dark') d.dataset.theme = t;
@@ -84,6 +97,7 @@ const ogImage = new URL('/og.png', Astro.site);
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
     {!bare && <SheetFrame />}
+    {intro && <Intro />}
     {!bare && <Header />}
     <main id="main">
       <slot />
