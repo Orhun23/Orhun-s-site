@@ -19,7 +19,7 @@ const rest = builds.filter((b) => !(b.data.model && b.data.cover));
     </h2>
     <p class="bench__lede">
       Scroll to put each one together. Every build starts as an exploded drawing, gets assembled part by part, measured,
-      and then scanned into the real thing. Move the cursor to turn the drawing, hover the photo to see through it.
+      and then scanned into the real thing. <span class="hint-fine">Move the cursor to turn the drawing, hover the photo to see through it.</span><span class="hint-touch">Drag the drawing to turn it, press and hold the photo to see through it.</span>
     </p>
     <ol class="bench__index mono" role="list">
       {
@@ -86,6 +86,19 @@ const rest = builds.filter((b) => !(b.data.model && b.data.cover));
   }
   .bench :global(.insp) {
     scroll-margin-top: 0;
+  }
+
+  /* the lede says how to use the bench: cursor words on desktop, finger words on touch */
+  .hint-touch {
+    display: none;
+  }
+  @media (hover: none) {
+    .hint-fine {
+      display: none;
+    }
+    .hint-touch {
+      display: inline;
+    }
   }
 
   .bench__rest {

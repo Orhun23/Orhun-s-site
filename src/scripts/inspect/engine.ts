@@ -158,12 +158,16 @@ export type ExplodedOptions = {
   accent: string;
   reduced: boolean;
   onStatus?: (s: Status) => void;
+  // touch: labels and leader lines are drawn into the canvas itself, so a scroll frame changes
+  // nothing in the DOM (moving DOM labels cost slow phones whole frames). Desktop keeps the
+  // DOM labels and SVG leaders.
+  lean?: { line: string };
 };
 
 export type Exploded = {
   setProgress(v: number): void;
   pointer(nx: number, ny: number): void;
-  setColors(ink: string, accent: string): void;
+  setColors(ink: string, accent: string, line?: string): void;
   setActive(on: boolean): void;
   resize(): void;
   destroy(): void;
@@ -172,7 +176,34 @@ export type Exploded = {
 export function createExploded(o: ExplodedOptions): Exploded {
   const { container, overlay, model, reduced } = o;
   let ink = o.ink,
-    accent = o.accent;
+    accent = o.accent,
+    line = o.lean?.line ?? o.ink;
+  const lean = !!o.lean;
+  if (lean) overlay?.classList.add('is-lean');
+  // lean: the look of a label, read once from the (hidden) DOM label so it follows the theme
+  type LabelStyle = { font: string; ls: string; upper: boolean; ink: string; accent: string; bg: string; border: string; px: number; py: number; lh: number };
+  let ls: LabelStyle | null = null;
+  let dimStyle: LabelStyle | null = null;
+  const styleOf = (el: HTMLElement, code?: Element | null): LabelStyle => {
+    const cs = getComputedStyle(el);
+    const size = parseFloat(cs.fontSize) || 10;
+    return {
+      font: `${cs.fontWeight} ${size}px ${cs.fontFamily}`,
+      ls: cs.letterSpacing === 'normal' ? '0px' : cs.letterSpacing,
+      upper: cs.textTransform === 'uppercase',
+      ink: cs.color,
+      accent: code ? getComputedStyle(code).color : cs.color,
+      bg: cs.backgroundColor,
+      border: cs.borderTopWidth !== '0px' ? cs.borderTopColor : '',
+      px: parseFloat(cs.paddingLeft) || 0,
+      py: parseFloat(cs.paddingTop) || 0,
+      lh: Math.round(size * 1.4),
+    };
+  };
+  const setFont = (s: LabelStyle) => {
+    ctx.font = s.font;
+    if ('letterSpacing' in ctx) (ctx as CanvasRenderingContext2D & { letterSpacing: string }).letterSpacing = s.ls;
+  };
 
   const canvas = document.createElement('canvas');
   canvas.setAttribute('aria-hidden', 'true');
@@ -227,6 +258,7 @@ export function createExploded(o: ExplodedOptions): Exploded {
       at: home,
       lw: 0,
       lastOp: -1,
+      cw: 0, // lean: width of the code text
       lastKey: '',
     };
   });
@@ -235,7 +267,7 @@ export function createExploded(o: ExplodedOptions): Exploded {
     el.className = 'xl-dim mono';
     el.textContent = d.text;
     overlay?.appendChild(el);
-    return { ...d, el };
+    return { ...d, el, w: 0 };
   });
 
   let progress = reduced ? 1 : 0;
@@ -261,8 +293,9 @@ export function createExploded(o: ExplodedOptions): Exploded {
     width = Math.max(1, r.width);
     height = Math.max(1, r.height);
     small = width < 520;
-    // 1.5× is crisp enough for 1px lines and ~45% fewer pixels to push per frame than 2×
-    dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    // 1.5× is crisp enough for 1px lines and ~45% fewer pixels to push per frame than 2×;
+    // lean (touch) draws the label text here too, which wants 2× to stay sharp
+    dpr = Math.min(window.devicePixelRatio || 1, lean ? 2 : 1.5);
     canvas.width = Math.round(width * dpr);
     canvas.height = Math.round(height * dpr);
     svg?.setAttribute('viewBox', `0 0 ${width} ${height}`);
@@ -270,6 +303,8 @@ export function createExploded(o: ExplodedOptions): Exploded {
       q.lw = 0;
       q.lastKey = '';
     });
+    dimLabels.forEach((dl) => (dl.w = 0));
+    ls = dimStyle = null;
   }
 
   // One affine map per part: screen = centre + scale·(M·v + t), only the x/y rows are needed.
@@ -345,12 +380,86 @@ export function createExploded(o: ExplodedOptions): Exploded {
       stroke(q.localAccent, q.localAccent.length / 6, accent, alpha);
     }
     ctx.globalAlpha = 1;
-    placeLabels(d);
+    if (lean) drawLabels(d);
+    else placeLabels(d);
 
     if (moving !== lastPart) {
       lastPart = moving;
       o.onStatus?.({ part: moving, assembled: a, dims: d });
     }
+  }
+
+  // lean: labels, leaders and dimension tags painted straight into the canvas
+  function drawLabels(d: number) {
+    if (!overlay) return;
+    const first = parts.find((q) => q.label)?.label;
+    if (!ls && first) ls = styleOf(first, first.querySelector('.accent'));
+    if (!dimStyle && dimLabels[0]) dimStyle = styleOf(dimLabels[0].el);
+    ctx.textBaseline = 'middle';
+    if (ls) {
+      const s = ls;
+      setFont(s);
+      const h = s.lh + s.py * 2 + 2;
+      for (const q of parts) {
+        if (!q.label) continue;
+        if (small && !q.def.mobile) continue;
+        const op = clamp01((1 - q.t) * 2.2);
+        if (op <= 0) continue;
+        const code = s.upper ? q.def.code.toUpperCase() : q.def.code;
+        const name = ' ' + (s.upper ? q.def.name.toUpperCase() : q.def.name);
+        if (!q.lw) {
+          q.cw = ctx.measureText(code).width;
+          q.lw = Math.ceil(q.cw + ctx.measureText(name).width + s.px * 2 + 2);
+        }
+        const [x, y] = project(q.at);
+        const side = q.def.labelSide ?? (x > width / 2 ? 1 : -1);
+        const off = small ? 40 : 76;
+        const lx = side > 0 ? Math.min(x + off, width - q.lw - 6) : Math.max(x - off, q.lw + 6);
+        const ly = Math.max(14, Math.min(height - 14, y - (small ? 14 : 26)));
+        const bx = Math.round(side > 0 ? lx : lx - q.lw),
+          by = Math.round(ly - h / 2);
+        ctx.globalAlpha = op;
+        // leader
+        ctx.strokeStyle = line;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(lx - side * 4, ly);
+        ctx.stroke();
+        // tag
+        ctx.fillStyle = s.bg;
+        ctx.fillRect(bx, by, q.lw, h);
+        if (s.border) {
+          ctx.strokeStyle = s.border;
+          ctx.strokeRect(bx + 0.5, by + 0.5, q.lw - 1, h - 1);
+        }
+        ctx.fillStyle = s.accent;
+        ctx.fillText(code, bx + 1 + s.px, by + h / 2);
+        ctx.fillStyle = s.ink;
+        ctx.fillText(name, bx + 1 + s.px + q.cw, by + h / 2);
+      }
+    }
+    const dop = clamp01((d - 0.6) * 2.5);
+    if (dimStyle && dop > 0) {
+      const s = dimStyle;
+      setFont(s);
+      const h = s.lh + s.py * 2;
+      ctx.globalAlpha = dop;
+      for (const dl of dimLabels) {
+        const text = s.upper ? dl.text.toUpperCase() : dl.text;
+        if (!dl.w) dl.w = Math.ceil(ctx.measureText(text).width + s.px * 2);
+        const [x, y] = project(dl.at);
+        ctx.save();
+        ctx.translate(x, y);
+        if (dl.rotate) ctx.rotate(-Math.PI / 2);
+        ctx.fillStyle = s.bg;
+        ctx.fillRect(-dl.w / 2, -h / 2, dl.w, h);
+        ctx.fillStyle = s.ink;
+        ctx.fillText(text, -dl.w / 2 + s.px, 0);
+        ctx.restore();
+      }
+    }
+    ctx.globalAlpha = 1;
   }
 
   function placeLabels(d: number) {
@@ -404,6 +513,14 @@ export function createExploded(o: ExplodedOptions): Exploded {
 
   fit();
   frame();
+  // lean labels are measured in the canvas: measure again once the web font is in
+  if (lean)
+    document.fonts?.ready.then(() => {
+      parts.forEach((q) => (q.lw = 0));
+      dimLabels.forEach((dl) => (dl.w = 0));
+      ls = dimStyle = null;
+      frame();
+    });
 
   return {
     setProgress(v) {
@@ -419,9 +536,11 @@ export function createExploded(o: ExplodedOptions): Exploded {
       tilt.tx = ny * 0.16;
       kick();
     },
-    setColors(i, a) {
+    setColors(i, a, l) {
       ink = i;
       accent = a;
+      if (l) line = l;
+      ls = dimStyle = null; // the theme changed: re-read the label look
       frame();
     },
     setActive(on) {

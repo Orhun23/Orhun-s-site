@@ -42,6 +42,7 @@ const parts = d.specs.slice(0, 5);
       {
         d.cover && (
           <figure class="insp__photo" data-insp-photo>
+            <div class="insp__photo-in" data-insp-photo-in>
             <Picture
               src={d.cover}
               alt={d.coverAlt ?? ''}
@@ -56,6 +57,7 @@ const parts = d.specs.slice(0, 5);
                 <img src={xray.src} alt="" loading="lazy" decoding="async" />
               </div>
             )}
+            </div>
           </figure>
         )
       }
@@ -211,6 +213,11 @@ const parts = d.specs.slice(0, 5);
     background: var(--bg);
     border: 1px solid var(--line-strong);
   }
+  /* touch (engine "lean" mode): labels and leaders are painted into the canvas; the DOM labels
+     stay only as the style source (and for the text), out of sight */
+  .insp__overlay:global(.is-lean) {
+    visibility: hidden;
+  }
   .insp__overlay :global(.xl-dim) {
     color: var(--accent-text);
     background: var(--bg);
@@ -225,8 +232,34 @@ const parts = d.specs.slice(0, 5);
     clip-path: inset(0 0 0 100%);
     background: var(--bg);
   }
+  .insp__photo-in {
+    position: absolute;
+    inset: 0;
+  }
   :global(.no-js) .insp__photo {
     clip-path: none;
+  }
+  /* touch: a clip-path repaints the whole photo every frame, so the wipe is two counter-moving
+     transforms instead (the figure slides in as a window, its contents slide the other way so
+     the photo stays put). Own layers only while the item is near (bench.ts sets is-near). */
+  @media (hover: none), (pointer: coarse), (pointer: none) {
+    .insp__photo {
+      clip-path: none;
+      overflow: hidden;
+      transform: translate3d(100%, 0, 0);
+    }
+    .insp__photo-in {
+      transform: translate3d(-100%, 0, 0);
+    }
+    :global(.js) .insp--scroll.is-near .insp__photo,
+    :global(.js) .insp--scroll.is-near .insp__photo-in,
+    .insp.is-near .insp__scan {
+      will-change: transform;
+    }
+    :global(.no-js) .insp__photo,
+    :global(.no-js) .insp__photo-in {
+      transform: none;
+    }
   }
   .insp__photo :global(picture),
   .insp__photo :global(img) {
@@ -398,7 +431,9 @@ const parts = d.specs.slice(0, 5);
 
   @media (max-width: 860px) {
     .insp__stage {
-      grid-template-columns: 1fr;
+      /* minmax(0, …): the status line changes as parts are fitted; with a plain 1fr its text
+         could widen the column past the screen and resize the drawing mid-scroll */
+      grid-template-columns: minmax(0, 1fr);
       grid-template-rows: auto minmax(0, 1fr) auto;
       gap: 0.75rem;
       padding-top: calc(var(--frame) + 3.6rem);
